@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1F3864">
+<title>MM26 Karte</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<style>
+  :root {
+    --bg: #f4f5f7; --fg: #111; --muted: #666; --card: #fff; --line: #222; --thin: #999;
+    --orange: #FFC000; --rot: #FF5050; --grau: #D9D9D9; --sez: #BFBFBF; --top: #1F3864;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--fg);
+    font-family: "Roboto Condensed", "Arial Narrow", Arial, sans-serif; }
+  header { position: sticky; top: 0; z-index: 5; background: var(--top); color: #fff;
+    padding: 8px 12px; display: flex; gap: 8px; align-items: center; }
+  header .t { font-weight: 700; font-size: 17px; }
+  header .s { font-size: 12px; opacity: .85; margin-left: auto; text-align: right; }
+  main { padding: 10px 12px 90px; max-width: 560px; margin: 0 auto; }
+  .row { display: flex; gap: 8px; }
+  input[type=text], input[type=password] { flex: 1; font-size: 20px; padding: 10px; border: 1px solid #aaa;
+    border-radius: 8px; min-width: 0; }
+  button { font-size: 17px; padding: 10px 14px; border-radius: 8px; border: 0; background: var(--top);
+    color: #fff; font-weight: 700; }
+  button.sec { background: #e3e6ec; color: #111; }
+  #scan { position: relative; margin: 10px 0; border-radius: 10px; overflow: hidden; background: #000;
+    display: none; aspect-ratio: 4 / 3; }
+  #scan video { width: 100%; height: 100%; object-fit: cover; }
+  #scan .ziel { position: absolute; left: 10%; right: 10%; top: 38%; height: 24%;
+    border: 3px solid rgba(255,255,255,.85); border-radius: 8px; box-shadow: 0 0 0 999px rgba(0,0,0,.25); }
+  .msg { padding: 10px; border-radius: 8px; background: #fff3cd; margin: 10px 0; font-size: 15px; }
+  .err { background: #f8d7da; }
+  .karte { background: var(--card); border: 2.5px solid var(--line); border-radius: 6px; margin: 10px 0;
+    overflow: hidden; }
+  .k1 { display: grid; grid-template-columns: 1fr auto auto auto; align-items: stretch;
+    border-bottom: 1px solid var(--thin); }
+  .k1 > div { padding: 6px 8px; display: flex; align-items: center; justify-content: center; font-size: 17px; }
+  .k1 .art { font-weight: 800; font-size: 26px; justify-content: flex-start; }
+  .k1 .abc { background: var(--grau); font-weight: 700; min-width: 36px; }
+  .k1 .logi { min-width: 90px; }
+  .k1 .lc { min-width: 34px; font-weight: 800; }
+  .mitte { display: grid; grid-template-columns: 34% 1fr; border-bottom: 1px solid var(--thin); }
+  .foto { display: flex; align-items: center; justify-content: center; padding: 4px;
+    border-right: 1px solid var(--thin); background: #fff; }
+  .foto img { max-width: 100%; max-height: 120px; }
+  .foto .nm { font-size: 13px; color: #333; padding: 4px; }
+  table.grid { width: 100%; border-collapse: collapse; font-size: 18px; }
+  table.grid th { font-size: 12px; color: var(--muted); font-weight: 600; padding: 3px 2px; }
+  table.grid td { border: 1px solid var(--thin); text-align: center; padding: 6px 2px; }
+  table.grid td.lbl { border: 0; font-size: 12px; color: var(--muted); text-align: right; padding-right: 4px; }
+  .promo { background: var(--rot); }
+  .koef { display: flex; gap: 14px; padding: 5px 8px; font-size: 15px; border-bottom: 1px solid var(--thin); }
+  .koef b { font-size: 17px; }
+  .tiles { display: grid; grid-template-columns: repeat(6, 1fr); border-bottom: 1px solid var(--thin); }
+  .tiles > div, .unten > div { border-right: 1px solid var(--thin); padding: 3px 2px 5px; text-align: center;
+    min-width: 0; }
+  .tiles > div:last-child, .unten > div:last-child { border-right: 0; }
+  .lb { display: block; font-size: 10.5px; color: var(--muted); line-height: 1.2; }
+  .v { display: block; font-size: 16px; font-weight: 700; line-height: 1.15; overflow-wrap: anywhere; }
+  .tiles .v { font-size: 14px; }
+  .o { background: var(--orange); } .r { background: var(--rot); } .g { background: var(--sez); }
+  .unten { display: grid; grid-template-columns: 1fr 1fr 1fr 3fr; }
+  .verdikt { display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 17px;
+    text-align: center; }
+  .det { background: #fff; border-radius: 8px; padding: 8px 10px; font-size: 15px; line-height: 1.45; }
+  .det .n { font-weight: 700; font-size: 16px; }
+  .det .l { color: var(--muted); }
+  .det .rot { color: #c00000; }
+  h3 { margin: 16px 0 6px; font-size: 15px; color: #333; }
+  .regal { display: flex; flex-wrap: wrap; gap: 6px; }
+  .regal a { display: block; padding: 7px 9px; border-radius: 6px; background: #fff; border: 1px solid #bbb;
+    color: #111; text-decoration: none; font-size: 15px; }
+  .regal a.akt { border: 2.5px solid var(--top); font-weight: 800; }
+  .regal a.leer { color: #999; }
+  .wahl a { display: block; padding: 10px; background: #fff; border-radius: 8px; margin: 6px 0; color: #111;
+    text-decoration: none; border: 1px solid #bbb; }
+  .fab { position: fixed; left: 50%; transform: translateX(-50%); bottom: 18px; z-index: 6;
+    font-size: 19px; padding: 14px 26px; border-radius: 30px; box-shadow: 0 4px 14px rgba(0,0,0,.3); }
+  .klein { font-size: 12px; color: var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <div class="t">MM26 · карточка</div>
+  <div class="s" id="stand">загрузка…</div>
+</header>
+<main>
+  <div id="login" style="display:none">
+    <div class="msg">Введите пароль (тот, что в karte_passwort.txt). Он сохранится на этом телефоне.</div>
+    <div class="row">
+      <input id="pw" type="password" autocomplete="current-password" placeholder="пароль">
+      <button id="pwok">OK</button>
+    </div>
+  </div>
+
+  <div id="app" style="display:none">
+    <div class="row">
+      <input id="code" type="text" inputmode="numeric" placeholder="артикул или EAN" autocomplete="off">
+      <button id="suche">→</button>
+    </div>
+    <div id="scan"><video id="video" playsinline muted></video><div class="ziel"></div></div>
+    <div id="out"></div>
+  </div>
+  <div id="info"></div>
+</main>
+<button class="fab" id="scanbtn" style="display:none">📷 Сканировать</button>
+
+<script>
+"use strict";
+const ITER = 250000;
+let DATA = null;
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmt = (v) => (v === null || v === undefined || v === "") ? "—" : String(v).replace(".", ",");
+const artKey = (s) => { s = String(s || "").trim(); return /^\d+$/.test(s) ? String(parseInt(s, 10)) : s.toUpperCase(); };
+
+function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+function lsDel(k) { try { localStorage.removeItem(k); } catch (e) {} }
+
+async function holeBlob() {
+  const r = await fetch("data.enc", { cache: "no-store" });
+  if (!r.ok) throw new Error("data.enc: HTTP " + r.status);
+  return new Uint8Array(await r.arrayBuffer());
+}
+
+async function entschluesseln(buf, pw) {
+  const magic = new TextDecoder().decode(buf.slice(0, 4));
+  if (magic !== "MM26") throw new Error("неверный формат файла");
+  const salt = buf.slice(4, 20), nonce = buf.slice(20, 32), ct = buf.slice(32);
+  const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(pw), "PBKDF2", false, ["deriveKey"]);
+  const key = await crypto.subtle.deriveKey({ name: "PBKDF2", salt, iterations: ITER, hash: "SHA-256" },
+    base, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
+  const gz = await crypto.subtle.decrypt({ name: "AES-GCM", iv: nonce }, key, ct);   // ошибка = неверный пароль
+  const ds = new Response(new Blob([gz]).stream().pipeThrough(new DecompressionStream("gzip")));
+  return JSON.parse(await ds.text());
+}
+
+async function start() {
+  let buf;
+  try { buf = await holeBlob(); }
+  catch (e) { $("stand").textContent = "нет данных"; $("info").innerHTML = '<div class="msg err">Не удалось загрузить данные: ' + esc(e.message) + '</div>'; return; }
+  const pw = lsGet("mm26pw");
+  if (pw) {
+    try { DATA = await entschluesseln(buf, pw); return bereit(); }
+    catch (e) { lsDel("mm26pw"); }
+  }
+  $("login").style.display = "";
+  $("pwok").onclick = async () => {
+    const p = $("pw").value;
+    $("pwok").disabled = true;
+    try { DATA = await entschluesseln(buf, p); lsSet("mm26pw", p); $("login").style.display = "none"; bereit(); }
+    catch (e) { $("info").innerHTML = '<div class="msg err">Пароль не подошёл.</div>'; }
+    $("pwok").disabled = false;
+  };
+}
+
+function bereit() {
+  $("info").innerHTML = "";
+  $("stand").innerHTML = "данные: " + esc(DATA.stand) + "<br>KW " + esc(DATA.kw);
+  $("app").style.display = "";
+  $("suche").onclick = () => suche($("code").value);
+  $("code").addEventListener("keydown", (e) => { if (e.key === "Enter") suche($("code").value); });
+  if ("BarcodeDetector" in window) {
+    $("scanbtn").style.display = "";
+    $("scanbtn").onclick = () => (scanAktiv ? scanStop() : scanStart());
+  } else {
+    $("out").innerHTML = '<div class="msg">Сканер в этом браузере не поддерживается — откройте в Chrome на Android. Номер можно ввести вручную.</div>';
+  }
+  const h = decodeURIComponent(location.hash.slice(1));
+  if (h) suche(h);
+}
+
+function suche(code) {
+  code = String(code || "").replace(/\s+/g, "");
+  if (!code) return;
+  const items = DATA.items, a = artKey(code);
+  if (items[a]) return zeige(a);
+  const treffer = (DATA.ean[code] || DATA.ean[code.replace(/^0+/, "")] || []).filter(x => items[x]);
+  if (treffer.length === 1) return zeige(treffer[0]);
+  if (treffer.length > 1) {
+    $("out").innerHTML = '<h3>Штрихкод ' + esc(code) + ' — несколько артикулов:</h3><div class="wahl">' +
+      treffer.map(x => '<a href="#' + x + '" data-a="' + x + '">' + esc(x) + ' · ' + esc(items[x].name || "") + '</a>').join("") + '</div>';
+    bindLinks(); return;
+  }
+  const inEan = (DATA.ean[code] || []).length;
+  $("out").innerHTML = '<div class="msg err">' + esc(code) + ': ' +
+    (inEan ? 'артикул ' + esc(DATA.ean[code].join(", ")) + ' есть в каталоге, но его нет в планограмме.' : 'не найден ни среди артикулов планограммы, ни среди штрихкодов.') + '</div>';
+}
+
+function bindLinks() {
+  document.querySelectorAll("[data-a]").forEach(el => el.onclick = (e) => { e.preventDefault(); zeige(el.dataset.a); });
+}
+
+function tile(label, val, cls) {
+  return '<div class="' + (cls || "") + '"><span class="lb">' + label + '</span><span class="v">' + esc(val) + '</span></div>';
+}
+
+function zeige(a) {
+  const k = DATA.items[a];
+  history.replaceState(null, "", "#" + a);
+  $("code").value = "";
+  if (!k.in_kat) { $("out").innerHTML = '<div class="msg err">' + esc(k.art) + ': нет в каталоге.</div>'; return; }
+  const lc = k.lc && k.lc !== "0" ? k.lc : "";
+  const fotoHtml = k.foto ? '<img alt="" src="data:image/jpeg;base64,' + k.foto + '">' : '<div class="nm">' + esc(k.name) + '</div>';
+  const tage = ["пн-чт", "пт", "сб"];
+  let grid = '<table class="grid"><tr><th></th><th>W-2</th><th>W-1</th><th>W0</th></tr>';
+  for (let i = 0; i < 3; i++) {
+    grid += '<tr><td class="lbl">' + tage[i] + '</td>';
+    for (let j = 0; j < 3; j++) {
+      const v = (k.raster[j] || [])[i];
+      grid += '<td class="' + ((k.promo_w || [])[j] ? "promo" : "") + '">' + (v === null || v === undefined ? "" : fmt(v)) + '</td>';
+    }
+    grid += '</tr>';
+  }
+  grid += '</table>';
+  const sl = k.sl, restl = k.restl;
+  const fut = k.fut || "", vorb = k.vorb || "";
+  let html = '<div class="karte">' +
+    '<div class="k1"><div class="art">' + esc(k.art) + '</div><div class="abc">' + esc(k.abc || "") + '</div>' +
+    '<div class="logi ' + (k.ost ? "" : "o") + '">' + esc(k.logi) + '</div><div class="lc ' + (lc ? "r" : "") + '">' + esc(lc) + '</div></div>' +
+    '<div class="mitte"><div class="foto">' + fotoHtml + '</div><div>' + grid + '</div></div>' +
+    '<div class="koef"><span>kПр <b>' + fmt(k.kpr) + '</b></span><span>kПС <b>' + fmt(k.kps) + '</b></span>' +
+      '<span class="klein" style="margin-left:auto">промо/обычн · пт-сб/пн-чт</span></div>' +
+    '<div class="tiles">' +
+      tile("РЦ", fmt(k.lager), (k.lager !== null && k.lager <= 0) ? "o" : "") +
+      tile("Vorbest.", vorb, vorb ? "o" : "") +
+      tile("в пути", fut, fut ? "o" : "") +
+      tile("склад", k.sklad ? fmt(k.sklad) : "", k.sklad ? "o" : "") +
+      tile("сезон", (k.sez || "").replace(" прерыв.", " прер"), "g") +
+      tile("промо W+1", k.w1 || "", k.w1 ? "r" : "") +
+    '</div>' +
+    '<div class="unten">' +
+      tile("SL", sl === null || sl === undefined ? "—" : sl + "%", (sl !== null && sl !== undefined && sl < DATA.sl_rot) ? "r" : "") +
+      tile("MHD", restl === null || restl === undefined ? "—" : restl + "д", (restl !== null && restl !== undefined && restl < DATA.mhd_rot) ? "r" : "") +
+      tile("уценка", k.uc ? fmt(k.uc) : "—", k.uc ? "o" : "") +
+      '<div class="verdikt" style="background:#' + k.vfill + ';color:#' + k.vfont + '">' + esc(k.vtext) + '</div>' +
+    '</div></div>';
+
+  const p = k.promo || [];
+  html += '<div class="det">' +
+    '<div class="n">' + esc(k.name) + ' ' + esc(k.inhalt || "") + '</div>' +
+    '<div class="l">' + esc(k.name_de || "") + '</div>' +
+    '<div>Остаток в магазине: <b class="' + ((k.laden !== null && k.laden <= 0) ? "rot" : "") + '">' + fmt(k.laden) + '</b> · в коробке: ' + esc(k.im_karton || "—") + '</div>' +
+    '<div>Причина: ' + esc(k.grund || "—") + '</div>' +
+    '<div>Промо KW: прошлое ' + esc(p[0] || "—") + ' · текущее ' + esc(p[1] || "—") + ' · следующее ' + esc(p[2] || "—") + '</div>' +
+    '<div>MHD: ' + esc(k.mhd || "—") + ' · последний чек: ' + esc(k.last_check || "—") + '</div>' +
+    (k.lc_txt ? '<div>Смены логистики: ' + esc(k.lc_txt) + '</div>' : '') +
+    (k.uc_ant ? '<div>Доля продаж по уценке (W-3..W0): ' + esc(k.uc_ant) + '%</div>' : '') +
+  '</div>';
+
+  for (const o of (k.orte || [])) {
+    const key = o[0] + "|" + o[1] + "|" + o[2];
+    const reg = DATA.regale[key] || [];
+    html += '<h3>' + esc(o[0]) + ' · холодильник ' + o[1] + ' · полка ' + o[2] + ' · место ' + o[3] + '</h3><div class="regal">' +
+      reg.map((x, i) => x
+        ? '<a href="#' + x + '" data-a="' + x + '" class="' + (x === a && i + 1 === o[3] ? "akt" : "") + '">' + (i + 1) + '. ' + esc(x) + '</a>'
+        : '<a class="leer">' + (i + 1) + '. резерв</a>').join("") + '</div>';
+  }
+  $("out").innerHTML = html;
+  bindLinks();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+// ---------- сканер ----------
+let scanAktiv = false, stream = null, detector = null, timer = null;
+async function scanStart() {
+  try {
+    detector = detector || new BarcodeDetector({ formats: ["ean_13", "ean_8", "upc_a", "upc_e", "code_128"] });
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1280 } }, audio: false });
+  } catch (e) {
+    $("out").innerHTML = '<div class="msg err">Камера недоступна: ' + esc(e.message) + '</div>'; return;
+  }
+  const v = $("video");
+  v.srcObject = stream; await v.play();
+  $("scan").style.display = "block";
+  scanAktiv = true; $("scanbtn").textContent = "✕ Стоп";
+  const loop = async () => {
+    if (!scanAktiv) return;
+    try {
+      const codes = await detector.detect(v);
+      if (codes.length) {
+        const c = codes[0].rawValue;
+        if (navigator.vibrate) navigator.vibrate(80);
+        scanStop(); suche(c); return;
+      }
+    } catch (e) {}
+    timer = setTimeout(loop, 120);
+  };
+  loop();
+}
+function scanStop() {
+  scanAktiv = false; clearTimeout(timer);
+  if (stream) stream.getTracks().forEach(t => t.stop());
+  stream = null; $("scan").style.display = "none"; $("scanbtn").textContent = "📷 Сканировать";
+}
+
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+start();
+</script>
+</body>
+</html>
