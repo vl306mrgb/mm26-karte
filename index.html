@@ -21,7 +21,7 @@
   header .s { font-size: 12px; opacity: .85; margin-left: auto; text-align: right; }
   main { padding: 10px 12px 90px; max-width: 560px; margin: 0 auto; }
   .row { display: flex; gap: 8px; }
-  input[type=text], input[type=password] { flex: 1; font-size: 20px; padding: 10px; border: 1px solid #aaa;
+  input[type=text], input[type=search], input[type=password] { flex: 1; font-size: 20px; padding: 10px; border: 1px solid #aaa;
     border-radius: 8px; min-width: 0; }
   button { font-size: 17px; padding: 10px 14px; border-radius: 8px; border: 0; background: var(--top);
     color: #fff; font-weight: 700; }
@@ -98,7 +98,7 @@
 
   <div id="app" style="display:none">
     <div class="row">
-      <input id="code" type="text" inputmode="numeric" placeholder="артикул или EAN" autocomplete="off">
+      <input id="code" type="search" enterkeyhint="search" placeholder="артикул, EAN или название" autocomplete="off">
       <button id="suche">→</button>
     </div>
     <div id="scan"><video id="video" playsinline muted></video><div class="ziel"></div></div>
@@ -174,9 +174,27 @@ function bereit() {
   if (h) suche(h);
 }
 
+function sucheName(q) {
+  const w = q.toLowerCase().split(/\s+/).filter(Boolean);
+  const res = [];
+  for (const [a, k] of Object.entries(DATA.items)) {
+    const t = ((k.name || "") + " " + (k.name_de || "") + " " + (k.art || "")).toLowerCase();
+    if (w.every(x => t.includes(x))) res.push(a);
+    if (res.length >= 60) break;
+  }
+  if (!res.length) { $("out").innerHTML = '<div class="msg err">По «' + esc(q) + '» ничего не найдено.</div>'; return; }
+  if (res.length === 1) return zeige(res[0]);
+  $("out").innerHTML = '<h3>Найдено ' + res.length + (res.length >= 60 ? '+' : '') + ':</h3><div class="wahl">' +
+    res.map(x => '<a href="#' + x + '" data-a="' + x + '">' + esc(DATA.items[x].art) + ' · ' + esc(DATA.items[x].name || "") +
+      (DATA.items[x].orte && DATA.items[x].orte.length ? '' : ' <span class="klein">(вне планограммы)</span>') + '</a>').join("") + '</div>';
+  bindLinks();
+}
+
 function suche(code) {
-  code = String(code || "").replace(/\s+/g, "");
-  if (!code) return;
+  const roh = String(code || "").trim();
+  if (!roh) return;
+  if (!/^[0-9MmCcRr\s]+$/.test(roh) || /[^\d\s]{3,}/.test(roh)) return sucheName(roh);
+  code = roh.replace(/\s+/g, "");
   const items = DATA.items, a = artKey(code);
   if (items[a]) return zeige(a);
   const treffer = (DATA.ean[code] || DATA.ean[code.replace(/^0+/, "")] || []).filter(x => items[x]);
@@ -188,7 +206,7 @@ function suche(code) {
   }
   const inEan = (DATA.ean[code] || []).length;
   $("out").innerHTML = '<div class="msg err">' + esc(code) + ': ' +
-    (inEan ? 'артикул ' + esc(DATA.ean[code].join(", ")) + ' есть в каталоге, но его нет в планограмме.' : 'не найден ни среди артикулов планограммы, ни среди штрихкодов.') + '</div>';
+    (inEan ? 'артикул ' + esc(DATA.ean[code].join(", ")) + ' есть в каталоге, но за 90 дней не продавался и остатка нет.' : 'не найден ни среди артикулов, ни среди штрихкодов.') + '</div>';
 }
 
 function bindLinks() {
@@ -252,6 +270,9 @@ function zeige(a) {
     (k.uc_ant ? '<div>Доля продаж по уценке (W-3..W0): ' + esc(k.uc_ant) + '%</div>' : '') +
   '</div>';
 
+  if (!(k.orte || []).length) {
+    html += '<h3>Вне планограммы' + (k.wg ? ' · ' + esc(k.wg) : '') + '</h3>';
+  }
   for (const o of (k.orte || [])) {
     const key = o[0] + "|" + o[1] + "|" + o[2];
     const reg = DATA.regale[key] || [];
