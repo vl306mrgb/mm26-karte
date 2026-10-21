@@ -268,16 +268,25 @@ function suche(code) {
   if (!/^[0-9MmCcRr\s]+$/.test(roh) || /[^\d\s]{3,}/.test(roh)) return sucheName(roh);
   code = roh.replace(/\s+/g, "");
   const items = DATA.items, a = artKey(code);
-  const pluTreffer = ((DATA.plu || {})[code] || []).filter(x => items[x]);
-  if (items[a] && pluTreffer.length && !(pluTreffer.length === 1 && pluTreffer[0] === a)) {
+  const pluAlle = ((DATA.plu || {})[code] || []).map(x => typeof x === "string" ? { a: x, art: x, n: "" } : x);
+  const pluTreffer = pluAlle.filter(x => x.a && items[x.a]).map(x => x.a);
+  const pluOhne = pluAlle.filter(x => !(x.a && items[x.a]));
+  if (items[a] && pluAlle.length && !(pluTreffer.length === 1 && pluTreffer[0] === a && !pluOhne.length)) {
     $("out").innerHTML = '<h3>' + esc(code) + ' — артикул или PLU весов?</h3><div class="wahl">' +
       '<a href="#' + a + '" data-a="' + a + '">артикул ' + esc(items[a].art) + ' · ' + esc(items[a].name_de || "") + '</a>' +
       pluTreffer.map(x => '<a href="#' + x + '" data-a="' + x + '">PLU ' + esc(code) + ' → ' + esc(items[x].art) + ' · ' +
-        esc(items[x].name_de || "") + '</a>').join("") + '</div>';
+        esc(items[x].name_de || "") + '</a>').join("") +
+      pluOhne.map(x => '<a class="leer">PLU ' + esc(code) + ' → ' + esc(x.art || "без артикула") + ' · ' + esc(x.n) +
+        ' <span class="klein">(нет продаж 90 дн и остатка)</span></a>').join("") + '</div>';
     bindLinks(); return;
   }
   if (items[a]) return zeige(a);
   if (pluTreffer.length === 1) return zeige(pluTreffer[0]);
+  if (!pluTreffer.length && pluOhne.length) {
+    $("out").innerHTML = '<div class="msg">PLU ' + esc(code) + ': ' + pluOhne.map(x => 'артикул <b>' + esc(x.art || "—") + '</b> ' +
+      esc(x.n)).join("<br>") + '<br><span class="klein">Карточки нет: за 90 дней не продавался и нет остатка.</span></div>';
+    return;
+  }
   if (pluTreffer.length > 1) {
     $("out").innerHTML = '<h3>PLU ' + esc(code) + ' — несколько артикулов:</h3><div class="wahl">' +
       pluTreffer.map(x => '<a href="#' + x + '" data-a="' + x + '">' + esc(items[x].art) + ' · ' + esc(items[x].name_de || "") + '</a>').join("") + '</div>';
