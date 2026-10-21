@@ -42,15 +42,21 @@
   .k1 .abc { background: var(--grau); font-weight: 700; min-width: 36px; }
   .k1 .logi { min-width: 90px; }
   .k1 .lc { min-width: 34px; font-weight: 800; }
-  .mitte { display: grid; grid-template-columns: 34% 1fr; border-bottom: 1px solid var(--thin); }
+  .mitte { display: grid; grid-template-columns: 32% 15% 1fr; border-bottom: 1px solid var(--thin); }
+  .kspalte { display: flex; flex-direction: column; justify-content: flex-end; gap: 6px; padding: 4px 4px 8px;
+    border-right: 1px solid var(--thin); }
+  .kspalte div { font-size: 11px; color: var(--muted); line-height: 1.1; }
+  .kspalte b { display: block; font-size: 17px; color: #111; }
   .foto { display: flex; align-items: center; justify-content: center; padding: 4px;
     border-right: 1px solid var(--thin); background: #fff; }
   .foto img { max-width: 100%; max-height: 120px; }
-  .foto .nm { font-size: 13px; color: #333; padding: 4px; }
+  .foto .nm { font-size: 12px; color: #333; padding: 4px; display: -webkit-box; -webkit-line-clamp: 6;
+    -webkit-box-orient: vertical; overflow: hidden; }
   table.grid { width: 100%; border-collapse: collapse; font-size: 18px; }
   table.grid th { font-size: 12px; color: var(--muted); font-weight: 600; padding: 3px 2px; }
   table.grid td { border: 1px solid var(--thin); text-align: center; padding: 6px 2px; }
-  table.grid td.lbl { border: 0; font-size: 12px; color: var(--muted); text-align: right; padding-right: 4px; }
+  table.grid td.lbl { border: 0; font-size: 10px; color: var(--muted); padding: 0 1px; width: 14px;
+    writing-mode: vertical-rl; transform: rotate(180deg); text-align: center; white-space: nowrap; }
   .promo { background: var(--rot); }
   table.grid td { position: relative; }
   table.grid td .pct { position: absolute; right: 3px; bottom: 1px; font-size: 7.5px; color: #808080; line-height: 1; }
@@ -77,7 +83,11 @@
   .unten { display: grid; grid-template-columns: 1fr 1fr 1fr 3fr; }
   .verdikt { display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 17px;
     text-align: center; }
-  .titel { font-weight: 700; font-size: 17px; margin: 12px 2px -4px; line-height: 1.25; }
+  .titel { font-weight: 700; font-size: 14px; margin: 12px 2px -4px; line-height: 1.25;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .wgzeile { font-size: 13px; color: #333; margin: 4px 2px 8px; }
+  .wgzeile b { color: #111; } .wgzeile .plus { color: #2e7d32; font-weight: 700; } .wgzeile .minus { color: #c00000; font-weight: 700; }
+  .grauf { background: #D9D9D9; }
   .titel .inh { color: var(--muted); font-weight: 400; }
   table.t2 { width: 100%; border-collapse: collapse; table-layout: fixed; }
   table.t2 td { border: 1px solid var(--thin); padding: 4px 3px 6px; text-align: center; vertical-align: top; }
@@ -258,7 +268,21 @@ function suche(code) {
   if (!/^[0-9MmCcRr\s]+$/.test(roh) || /[^\d\s]{3,}/.test(roh)) return sucheName(roh);
   code = roh.replace(/\s+/g, "");
   const items = DATA.items, a = artKey(code);
+  const pluTreffer = ((DATA.plu || {})[code] || []).filter(x => items[x]);
+  if (items[a] && pluTreffer.length && !(pluTreffer.length === 1 && pluTreffer[0] === a)) {
+    $("out").innerHTML = '<h3>' + esc(code) + ' — артикул или PLU весов?</h3><div class="wahl">' +
+      '<a href="#' + a + '" data-a="' + a + '">артикул ' + esc(items[a].art) + ' · ' + esc(items[a].name_de || "") + '</a>' +
+      pluTreffer.map(x => '<a href="#' + x + '" data-a="' + x + '">PLU ' + esc(code) + ' → ' + esc(items[x].art) + ' · ' +
+        esc(items[x].name_de || "") + '</a>').join("") + '</div>';
+    bindLinks(); return;
+  }
   if (items[a]) return zeige(a);
+  if (pluTreffer.length === 1) return zeige(pluTreffer[0]);
+  if (pluTreffer.length > 1) {
+    $("out").innerHTML = '<h3>PLU ' + esc(code) + ' — несколько артикулов:</h3><div class="wahl">' +
+      pluTreffer.map(x => '<a href="#' + x + '" data-a="' + x + '">' + esc(items[x].art) + ' · ' + esc(items[x].name_de || "") + '</a>').join("") + '</div>';
+    bindLinks(); return;
+  }
   const varianten = [code, "0" + code, code.replace(/^0+/, ""), "00" + code];   // UPC-A (12) <-> EAN-13
   let gef = [];
   for (const v of varianten) if (DATA.ean[v]) { gef = DATA.ean[v]; break; }
@@ -306,7 +330,13 @@ function block2(k) {
     zelle("последний чек", esc((k.last_check || "—").slice(0, 10)), chekCls) +
     zelle("дней назад", tg === null ? "—" : tg, chekCls) + '</tr>';
   h += '<tr><td class="kopf">последние<br>заказы</td>' +
-    [0, 1, 2].map(i => zelle(["1", "2", "3"][i], '<span class="blau">' + esc(lb[i] || "—") + '</span>')).join("") + '</tr>';
+    [0, 1, 2].map(i => {
+      const x = lb[i], t = x ? (typeof x === "string" ? x : x.t) : "";
+      return zelle(["1", "2", "3"][i] + (x && x.app ? " · App" : ""), '<span class="blau">' + esc(t || "—") + '</span>');
+    }).join("") + '</tr>';
+  const lf = k.liefer || [];
+  h += '<tr><td class="kopf">последние<br>поставки</td>' +
+    [0, 1, 2].map(i => zelle(["1", "2", "3"][i], esc(lf[i] ? lf[i].t : "—"), lf[i] && lf[i].offen ? "grauf" : "")).join("") + '</tr>';
   h += '<tr><td class="kopf">промо KW</td>' +
     zelle("прошлое", esc(p[0] || "—")) +
     zelle("текущее", esc(p[1] || "—"), p[1] && p[1] !== "—" ? "r" : "") +
@@ -324,21 +354,21 @@ function histogramm(k) {
   const mo = k.monate || [];
   if (!mo.length) return "";
   const W = 360, H = 160, top = 16, bottom = 22, n = mo.length, bw = W / n;
-  const max = Math.max(1, ...mo.map(x => x[1]));
+  const max = Math.max(1, ...mo.map(x => (x[2] || [x[1]]).reduce((p, t) => p + Math.max(t, 0), 0)));
   let svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" role="img" aria-label="продажи по месяцам">';
   mo.forEach((x, i) => {
     const total = x[1], teile = x[2] || [total, 0, 0, 0];
     const xx = i * bw + 4, w = bw - 8, aktuell = i === n - 1;
     let y = H - bottom;
     teile.forEach((t, j) => {                     // снизу вверх: обычные, промо, уценка, сотрудники
-      if (!t) return;
+      if (!t || t <= 0) return;                   // возвраты (минус) не рисуем
       const h = (H - top - bottom) * t / max;
       y -= h;
       svg += '<rect x="' + xx + '" y="' + y + '" width="' + w + '" height="' + Math.max(h, 1) + '" fill="' + TEIL_FARBE[j] +
         '"' + (aktuell ? ' fill-opacity="0.55"' : '') + '><title>' + TEIL_NAME[j] + ': ' + fmt(Math.round(t)) + '</title></rect>';
     });
     svg += '<text x="' + (xx + w / 2) + '" y="' + (y - 3) + '" font-size="10" text-anchor="middle" fill="#111">' +
-      (total ? fmt(Math.round(total)) : "") + '</text>';
+      (Math.round(total) > 0 ? fmt(Math.round(total)) : "") + '</text>';
     const m = +x[0].slice(5, 7) - 1;
     svg += '<text x="' + (xx + w / 2) + '" y="' + (H - 7) + '" font-size="10" text-anchor="middle" fill="#666">' +
       MON[m] + (m === 0 ? "'" + x[0].slice(2, 4) : "") + '</text>';
@@ -359,7 +389,7 @@ function zeige(a) {
   const lc = k.lc && k.lc !== "0" ? k.lc : "";
   const fotoHtml = k.foto ? '<img alt="" src="data:image/jpeg;base64,' + k.foto + '">' : '<div class="nm">' + esc(k.name_de || k.name) + '</div>';
   const tage = ["пн-чт", "пт", "сб"];
-  let grid = '<table class="grid"><tr><th></th><th>W-2</th><th>W-1</th><th>W0</th></tr>';
+  let grid = '<table class="grid"><tr><th style="width:14px"></th><th>W-2</th><th>W-1</th><th>W0</th></tr>';
   for (let i = 0; i < 3; i++) {
     grid += '<tr><td class="lbl">' + tage[i] + '</td>';
     for (let j = 0; j < 3; j++) {
@@ -373,13 +403,17 @@ function zeige(a) {
   grid += '</table>';
   const sl = k.sl, restl = k.restl;
   const fut = k.fut || "", vorb = k.vorb || "";
+  const ws = k.wg_stat || {};
+  const proz = (x) => (x === null || x === undefined) ? "—" : '<span class="' + (x > 0 ? "plus" : (x < 0 ? "minus" : "")) + '">' + (x > 0 ? "+" : "") + x + '%</span>';
+  const wgZeile = k.wg ? '<div class="wgzeile">' + esc(k.wg) + (ws.anteil !== undefined && ws.anteil !== null
+      ? ' · <b>' + fmt(ws.anteil) + '%</b> оборота (LFL ' + proz(ws.lfl) + ' · к пр. мес. ' + proz(ws.mom) + ')' : '') + '</div>' : '';
   let html = '<div class="titel">' + esc(k.name_de || k.name) + ' <span class="inh">' + esc(k.inhalt || "") + '</span></div>' +
     '<div class="karte">' +
     '<div class="k1"><div class="art">' + esc(k.art) + '</div><div class="abc">' + esc(k.abc || "") + '</div>' +
     '<div class="logi ' + (k.ost ? "" : "o") + '">' + esc(k.logi) + '</div><div class="lc ' + (lc ? "r" : "") + '">' + esc(lc) + '</div></div>' +
-    '<div class="mitte"><div class="foto">' + fotoHtml + '</div><div>' + grid + '</div></div>' +
-    '<div class="koef"><span>KWk <b>' + fmt(k.kpr) + '</b></span><span>FSk <b>' + fmt(k.kps) + '</b></span>' +
-      '<span class="klein" style="margin-left:auto">промо/обычн · пт-сб/пн-чт</span></div>' +
+    '<div class="mitte"><div class="foto">' + fotoHtml + '</div>' +
+      '<div class="kspalte"><div>KWk<b>' + fmt(k.kpr) + '</b></div><div>FSk<b>' + fmt(k.kps) + '</b></div></div>' +
+      '<div>' + grid + '</div></div>' +
     '<div class="tiles">' +
       ((k.lager !== null && k.lager <= 0)
         ? tileH("РЦ", '<span class="v">0</span><span class="klz">&gt;' + 10 + ': ' + esc(k.rz10 || "давно") + '</span>', "o")
@@ -400,7 +434,7 @@ function zeige(a) {
       '<div class="verdikt" style="background:#' + k.vfill + ';color:#' + k.vfont + '">' + esc(k.vtext) + '</div>' +
     '</div></div>';
 
-  html += block2(k) + histogramm(k);
+  html += block2(k) + histogramm(k) + wgZeile;
 
   if (!(k.orte || []).length) {
     html += '<h3>Вне планограммы' + (k.wg ? ' · ' + esc(k.wg) : '') + '</h3>';

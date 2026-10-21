@@ -1,5 +1,5 @@
 // MM26 Karte - service worker: приложение работает без сети, данные - сначала из сети, иначе последняя копия.
-const APP = "mm26-app-v7";
+const APP = "mm26-app-v9";
 const FOTOS = "mm26-fotos";
 const DATA = "mm26-data";
 const SHELL = ["./", "index.html", "manifest.webmanifest", "icon-192.png", "icon-512.png"];
