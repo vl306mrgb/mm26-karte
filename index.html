@@ -52,6 +52,13 @@
   table.grid td { border: 1px solid var(--thin); text-align: center; padding: 6px 2px; }
   table.grid td.lbl { border: 0; font-size: 12px; color: var(--muted); text-align: right; padding-right: 4px; }
   .promo { background: var(--rot); }
+  table.grid td { position: relative; }
+  table.grid td .pct { position: absolute; right: 3px; bottom: 1px; font-size: 7.5px; color: #808080; line-height: 1; }
+  .schwarz { background: #000; color: #fff; } .schwarz .lb { color: #ccc; }
+  .klz { display: block; font-size: 11px; font-weight: 400; color: #333; line-height: 1.1; }
+  .slz { display: block; font-size: 14px; font-weight: 700; line-height: 1.2; white-space: nowrap; }
+  .slz i { font-style: normal; font-weight: 400; font-size: 10px; color: var(--muted); }
+  .slz.rot { color: #c00000; }
   .koef { display: flex; gap: 14px; padding: 5px 8px; font-size: 15px; border-bottom: 1px solid var(--thin); }
   .koef b { font-size: 17px; }
   .tiles { display: grid; grid-template-columns: repeat(6, 1fr); border-bottom: 1px solid var(--thin); }
@@ -268,6 +275,9 @@ function bindLinks() {
 function tile(label, val, cls) {
   return '<div class="' + (cls || "") + '"><span class="lb">' + label + '</span><span class="v">' + esc(val) + '</span></div>';
 }
+function tileH(label, html, cls) {
+  return '<div class="' + (cls || "") + '"><span class="lb">' + label + '</span>' + html + '</div>';
+}
 
 function tageSeit(s) {          // "17.10.2026 19:51" -> дней назад
   const m = /^(\d\d)\.(\d\d)\.(\d{4})/.exec(s || "");
@@ -338,7 +348,9 @@ function zeige(a) {
     grid += '<tr><td class="lbl">' + tage[i] + '</td>';
     for (let j = 0; j < 3; j++) {
       const v = (k.raster[j] || [])[i];
-      grid += '<td class="' + ((k.promo_w || [])[j] ? "promo" : "") + '">' + (v === null || v === undefined ? "" : fmt(v)) + '</td>';
+      const pc = (i === 0 && v !== null && v !== undefined && k.raster_pct && k.raster_pct[j] !== null && k.raster_pct[j] !== undefined)
+        ? '<span class="pct">' + k.raster_pct[j] + '%</span>' : "";
+      grid += '<td class="' + ((k.promo_w || [])[j] ? "promo" : "") + '">' + (v === null || v === undefined ? "" : fmt(v)) + pc + '</td>';
     }
     grid += '</tr>';
   }
@@ -350,18 +362,23 @@ function zeige(a) {
     '<div class="k1"><div class="art">' + esc(k.art) + '</div><div class="abc">' + esc(k.abc || "") + '</div>' +
     '<div class="logi ' + (k.ost ? "" : "o") + '">' + esc(k.logi) + '</div><div class="lc ' + (lc ? "r" : "") + '">' + esc(lc) + '</div></div>' +
     '<div class="mitte"><div class="foto">' + fotoHtml + '</div><div>' + grid + '</div></div>' +
-    '<div class="koef"><span>kПр <b>' + fmt(k.kpr) + '</b></span><span>kПС <b>' + fmt(k.kps) + '</b></span>' +
+    '<div class="koef"><span>KWk <b>' + fmt(k.kpr) + '</b></span><span>FSk <b>' + fmt(k.kps) + '</b></span>' +
       '<span class="klein" style="margin-left:auto">промо/обычн · пт-сб/пн-чт</span></div>' +
     '<div class="tiles">' +
-      tile("РЦ", fmt(k.lager), (k.lager !== null && k.lager <= 0) ? "o" : "") +
-      tile("Vorbest.", vorb, vorb ? "o" : "") +
+      ((k.lager !== null && k.lager <= 0)
+        ? tileH("РЦ", '<span class="v">0</span><span class="klz">&gt;' + 10 + ': ' + esc(k.rz10 || "давно") + '</span>', "o")
+        : tile("РЦ", fmt(k.lager), "")) +
+      tile("Vorbest.", vorb, vorb ? (k.vorb_zu ? "schwarz" : "o") : "") +
       tile("в пути", fut, fut ? "o" : "") +
-      tile("склад", k.sklad ? fmt(k.sklad) : "", k.sklad ? "o" : "") +
+      (k.sklad ? tileH("склад", '<span class="v">' + fmt(k.sklad) + '</span><span class="klz">' + esc(k.sklad_d || "") + '</span>',
+        k.sklad_alt ? "g" : "o") : tile("склад", "", "")) +
       tile("сезон", (k.sez || "").replace(" прерыв.", " прер"), "g") +
       tile("промо W+1", k.w1 || "", k.w1 ? "r" : "") +
     '</div>' +
     '<div class="unten">' +
-      tile("SL", sl === null || sl === undefined ? "—" : sl + "%", (sl !== null && sl !== undefined && sl < DATA.sl_rot) ? "r" : "") +
+      tileH("SL", [["РЦ", k.sl_rz], ["маг", sl]].map(x => '<span class="slz' +
+        ((x[1] !== null && x[1] !== undefined && x[1] < DATA.sl_rot) ? ' rot' : '') + '"><i>' + x[0] + '</i> ' +
+        (x[1] === null || x[1] === undefined ? "—" : x[1] + "%") + '</span>').join(""), "") +
       tile("MHD", restl === null || restl === undefined ? "—" : restl + "д", (restl !== null && restl !== undefined && restl < DATA.mhd_rot) ? "r" : "") +
       tile("уценка", k.uc ? fmt(k.uc) : "—", k.uc ? "o" : "") +
       '<div class="verdikt" style="background:#' + k.vfill + ';color:#' + k.vfont + '">' + esc(k.vtext) + '</div>' +
