@@ -97,10 +97,10 @@
   </div>
 
   <div id="app" style="display:none">
-    <div class="row">
+    <form class="row" id="suchform" action="#" onsubmit="return false">
       <input id="code" type="search" enterkeyhint="search" placeholder="артикул, EAN или название" autocomplete="off">
-      <button id="suche">→</button>
-    </div>
+      <button id="suche" type="submit">→</button>
+    </form>
     <div id="scan"><video id="video" playsinline muted></video><div class="ziel"></div></div>
     <div id="out"></div>
   </div>
@@ -200,8 +200,7 @@ function bereit() {
   $("info").innerHTML = "";
   $("stand").innerHTML = "данные: " + esc(DATA.stand) + "<br>KW " + esc(DATA.kw);
   $("app").style.display = "";
-  $("suche").onclick = () => suche($("code").value);
-  $("code").addEventListener("keydown", (e) => { if (e.key === "Enter") suche($("code").value); });
+  $("suchform").addEventListener("submit", (e) => { e.preventDefault(); suche($("code").value); $("code").blur(); });
   if ("BarcodeDetector" in window) {
     $("scanbtn").style.display = "";
     $("scanbtn").onclick = () => (scanAktiv ? scanStop() : scanStart());
@@ -235,16 +234,18 @@ function suche(code) {
   code = roh.replace(/\s+/g, "");
   const items = DATA.items, a = artKey(code);
   if (items[a]) return zeige(a);
-  const treffer = (DATA.ean[code] || DATA.ean[code.replace(/^0+/, "")] || []).filter(x => items[x]);
+  const varianten = [code, "0" + code, code.replace(/^0+/, ""), "00" + code];   // UPC-A (12) <-> EAN-13
+  let gef = [];
+  for (const v of varianten) if (DATA.ean[v]) { gef = DATA.ean[v]; break; }
+  const treffer = gef.filter(x => items[x]);
   if (treffer.length === 1) return zeige(treffer[0]);
   if (treffer.length > 1) {
     $("out").innerHTML = '<h3>Штрихкод ' + esc(code) + ' — несколько артикулов:</h3><div class="wahl">' +
       treffer.map(x => '<a href="#' + x + '" data-a="' + x + '">' + esc(x) + ' · ' + esc(items[x].name || "") + '</a>').join("") + '</div>';
     bindLinks(); return;
   }
-  const inEan = (DATA.ean[code] || []).length;
-  $("out").innerHTML = '<div class="msg err">' + esc(code) + ': ' +
-    (inEan ? 'артикул ' + esc(DATA.ean[code].join(", ")) + ' есть в каталоге, но за 90 дней не продавался и остатка нет.' : 'не найден ни среди артикулов, ни среди штрихкодов.') + '</div>';
+  $("out").innerHTML = '<div class="msg err">' + esc(code) + ': не найден ни среди артикулов, ни среди штрихкодов ' +
+    '(в карточках только товары с продажами за 90 дней или с остатком).</div>';
 }
 
 function bindLinks() {
