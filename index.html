@@ -65,6 +65,19 @@
   .unten { display: grid; grid-template-columns: 1fr 1fr 1fr 3fr; }
   .verdikt { display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 17px;
     text-align: center; }
+  .titel { font-weight: 700; font-size: 17px; margin: 12px 2px -4px; line-height: 1.25; }
+  .titel .inh { color: var(--muted); font-weight: 400; }
+  table.t2 { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  table.t2 td { border: 1px solid var(--thin); padding: 4px 3px 6px; text-align: center; vertical-align: top; }
+  table.t2 td .lb { font-size: 10.5px; }
+  table.t2 td .v { font-size: 16px; }
+  table.t2 td.links { text-align: left; font-size: 14px; font-weight: 400; }
+  table.t2 td.kopf { background: #eef1f6; font-size: 11px; color: #333; font-weight: 700; vertical-align: middle; }
+  .blau { color: #1F4E9E; }
+  .gelbf { background: #FFF2CC; }
+  .rotf { background: #F8CBAD; }
+  .hist { background: #fff; border: 2.5px solid var(--line); border-radius: 6px; margin: 10px 0; padding: 6px 4px 2px; }
+  .hist .ht { font-size: 12px; color: var(--muted); padding: 0 4px 2px; }
   .det { background: #fff; border-radius: 8px; padding: 8px 10px; font-size: 15px; line-height: 1.45; }
   .det .n { font-weight: 700; font-size: 16px; }
   .det .l { color: var(--muted); }
@@ -222,7 +235,7 @@ function sucheName(q) {
   if (!res.length) { $("out").innerHTML = '<div class="msg err">По «' + esc(q) + '» ничего не найдено.</div>'; return; }
   if (res.length === 1) return zeige(res[0]);
   $("out").innerHTML = '<h3>Найдено ' + res.length + (res.length >= 60 ? '+' : '') + ':</h3><div class="wahl">' +
-    res.map(x => '<a href="#' + x + '" data-a="' + x + '">' + esc(DATA.items[x].art) + ' · ' + esc(DATA.items[x].name || "") +
+    res.map(x => '<a href="#' + x + '" data-a="' + x + '">' + esc(DATA.items[x].art) + ' · ' + esc(DATA.items[x].name_de || DATA.items[x].name || "") +
       (DATA.items[x].orte && DATA.items[x].orte.length ? '' : ' <span class="klein">(вне планограммы)</span>') + '</a>').join("") + '</div>';
   bindLinks();
 }
@@ -241,7 +254,7 @@ function suche(code) {
   if (treffer.length === 1) return zeige(treffer[0]);
   if (treffer.length > 1) {
     $("out").innerHTML = '<h3>Штрихкод ' + esc(code) + ' — несколько артикулов:</h3><div class="wahl">' +
-      treffer.map(x => '<a href="#' + x + '" data-a="' + x + '">' + esc(x) + ' · ' + esc(items[x].name || "") + '</a>').join("") + '</div>';
+      treffer.map(x => '<a href="#' + x + '" data-a="' + x + '">' + esc(items[x].art) + ' · ' + esc(items[x].name_de || items[x].name || "") + '</a>').join("") + '</div>';
     bindLinks(); return;
   }
   $("out").innerHTML = '<div class="msg err">' + esc(code) + ': не найден ни среди артикулов, ни среди штрихкодов ' +
@@ -256,6 +269,61 @@ function tile(label, val, cls) {
   return '<div class="' + (cls || "") + '"><span class="lb">' + label + '</span><span class="v">' + esc(val) + '</span></div>';
 }
 
+function tageSeit(s) {          // "17.10.2026 19:51" -> дней назад
+  const m = /^(\d\d)\.(\d\d)\.(\d{4})/.exec(s || "");
+  if (!m) return null;
+  const d = new Date(+m[3], +m[2] - 1, +m[1]), h = new Date(); h.setHours(0, 0, 0, 0);
+  return Math.round((h - d) / 86400000);
+}
+
+function zelle(label, wert, cls, span) {
+  return '<td' + (span ? ' colspan="' + span + '"' : '') + ' class="' + (cls || "") + '"><span class="lb">' + label +
+    '</span><span class="v">' + wert + '</span></td>';
+}
+
+function block2(k) {
+  const p = k.promo || [], lb = k.lb || [], tg = tageSeit(k.last_check);
+  const chekCls = tg === null ? "" : (tg > 3 ? "rotf" : (tg >= 1 ? "gelbf" : ""));
+  let h = '<div class="karte"><table class="t2">';
+  h += '<tr>' +
+    zelle("остаток маг", fmt(k.laden), (k.laden !== null && k.laden <= 0) ? "r" : "") +
+    zelle("в коробке", esc(k.im_karton || "—")) +
+    zelle("последний чек", esc((k.last_check || "—").slice(0, 10)), chekCls) +
+    zelle("дней назад", tg === null ? "—" : tg, chekCls) + '</tr>';
+  h += '<tr><td class="kopf">последние<br>заказы</td>' +
+    [0, 1, 2].map(i => zelle(["1", "2", "3"][i], '<span class="blau">' + esc(lb[i] || "—") + '</span>')).join("") + '</tr>';
+  h += '<tr><td class="kopf">промо KW</td>' +
+    zelle("прошлое", esc(p[0] || "—")) +
+    zelle("текущее", esc(p[1] || "—"), p[1] && p[1] !== "—" ? "r" : "") +
+    zelle("следующее", esc(p[2] || "—"), p[2] && p[2] !== "—" ? "o" : "") + '</tr>';
+  h += '<tr><td class="kopf">причина</td><td colspan="3" class="links">' + esc(k.grund || "—") + '</td></tr>';
+  if (k.lc_txt) h += '<tr><td class="kopf">смены<br>логистики</td><td colspan="3" class="links">' + esc(k.lc_txt) + '</td></tr>';
+  if (k.uc_ant) h += '<tr><td class="kopf">доля уценки<br>W-3..W0</td><td colspan="3" class="links">' + esc(k.uc_ant) + '% продаж</td></tr>';
+  return h + '</table></div>';
+}
+
+const MON = ["янв", "фев", "мар", "апр", "май", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"];
+function histogramm(k) {
+  const mo = k.monate || [];
+  if (!mo.length) return "";
+  const W = 360, H = 150, top = 16, bottom = 22, n = mo.length, bw = W / n;
+  const max = Math.max(1, ...mo.map(x => x[1]));
+  let svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" role="img" aria-label="продажи по месяцам">';
+  mo.forEach((x, i) => {
+    const v = x[1], h = (H - top - bottom) * v / max, xx = i * bw + 4, y = H - bottom - h;
+    const aktuell = i === n - 1;
+    svg += '<rect x="' + xx + '" y="' + y + '" width="' + (bw - 8) + '" height="' + Math.max(h, v > 0 ? 1 : 0) +
+      '" rx="2" fill="' + (aktuell ? "#9DB3D9" : "#1F3864") + '"></rect>';
+    svg += '<text x="' + (xx + (bw - 8) / 2) + '" y="' + (y - 3) + '" font-size="10" text-anchor="middle" fill="#111">' +
+      (v ? fmt(Math.round(v)) : "") + '</text>';
+    const m = +x[0].slice(5, 7) - 1;
+    svg += '<text x="' + (xx + (bw - 8) / 2) + '" y="' + (H - 7) + '" font-size="10" text-anchor="middle" fill="#666">' +
+      MON[m] + (m === 0 ? "'" + x[0].slice(2, 4) : "") + '</text>';
+  });
+  svg += '</svg>';
+  return '<div class="hist"><div class="ht">продажи, шт в месяц (12 мес; последний — текущий, неполный)</div>' + svg + '</div>';
+}
+
 function zeige(a) {
   const k = DATA.items[a];
   history.replaceState(null, "", "#" + a);
@@ -263,7 +331,7 @@ function zeige(a) {
   $("code").value = "";
   if (!k.in_kat) { $("out").innerHTML = '<div class="msg err">' + esc(k.art) + ': нет в каталоге.</div>'; return; }
   const lc = k.lc && k.lc !== "0" ? k.lc : "";
-  const fotoHtml = k.foto ? '<img alt="" src="data:image/jpeg;base64,' + k.foto + '">' : '<div class="nm">' + esc(k.name) + '</div>';
+  const fotoHtml = k.foto ? '<img alt="" src="data:image/jpeg;base64,' + k.foto + '">' : '<div class="nm">' + esc(k.name_de || k.name) + '</div>';
   const tage = ["пн-чт", "пт", "сб"];
   let grid = '<table class="grid"><tr><th></th><th>W-2</th><th>W-1</th><th>W0</th></tr>';
   for (let i = 0; i < 3; i++) {
@@ -277,7 +345,8 @@ function zeige(a) {
   grid += '</table>';
   const sl = k.sl, restl = k.restl;
   const fut = k.fut || "", vorb = k.vorb || "";
-  let html = '<div class="karte">' +
+  let html = '<div class="titel">' + esc(k.name_de || k.name) + ' <span class="inh">' + esc(k.inhalt || "") + '</span></div>' +
+    '<div class="karte">' +
     '<div class="k1"><div class="art">' + esc(k.art) + '</div><div class="abc">' + esc(k.abc || "") + '</div>' +
     '<div class="logi ' + (k.ost ? "" : "o") + '">' + esc(k.logi) + '</div><div class="lc ' + (lc ? "r" : "") + '">' + esc(lc) + '</div></div>' +
     '<div class="mitte"><div class="foto">' + fotoHtml + '</div><div>' + grid + '</div></div>' +
@@ -298,17 +367,7 @@ function zeige(a) {
       '<div class="verdikt" style="background:#' + k.vfill + ';color:#' + k.vfont + '">' + esc(k.vtext) + '</div>' +
     '</div></div>';
 
-  const p = k.promo || [];
-  html += '<div class="det">' +
-    '<div class="n">' + esc(k.name) + ' ' + esc(k.inhalt || "") + '</div>' +
-    '<div class="l">' + esc(k.name_de || "") + '</div>' +
-    '<div>Остаток в магазине: <b class="' + ((k.laden !== null && k.laden <= 0) ? "rot" : "") + '">' + fmt(k.laden) + '</b> · в коробке: ' + esc(k.im_karton || "—") + '</div>' +
-    '<div>Причина: ' + esc(k.grund || "—") + '</div>' +
-    '<div>Промо KW: прошлое ' + esc(p[0] || "—") + ' · текущее ' + esc(p[1] || "—") + ' · следующее ' + esc(p[2] || "—") + '</div>' +
-    '<div>MHD: ' + esc(k.mhd || "—") + ' · последний чек: ' + esc(k.last_check || "—") + '</div>' +
-    (k.lc_txt ? '<div>Смены логистики: ' + esc(k.lc_txt) + '</div>' : '') +
-    (k.uc_ant ? '<div>Доля продаж по уценке (W-3..W0): ' + esc(k.uc_ant) + '%</div>' : '') +
-  '</div>';
+  html += block2(k) + histogramm(k);
 
   if (!(k.orte || []).length) {
     html += '<h3>Вне планограммы' + (k.wg ? ' · ' + esc(k.wg) : '') + '</h3>';
