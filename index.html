@@ -59,6 +59,11 @@
   .slz { display: block; font-size: 14px; font-weight: 700; line-height: 1.2; white-space: nowrap; }
   .slz i { font-style: normal; font-weight: 400; font-size: 10px; color: var(--muted); }
   .slz.rot { color: #c00000; }
+  .slbox { display: flex; flex-direction: column; justify-content: center; gap: 4px; }
+  .slbox { padding: 2px 1px !important; }
+  .slbox .slz { font-size: 13px; letter-spacing: -0.2px; }
+  .slbox .slz i { font-size: 8.5px; }
+  main { padding-bottom: 110px; }
   .koef { display: flex; gap: 14px; padding: 5px 8px; font-size: 15px; border-bottom: 1px solid var(--thin); }
   .koef b { font-size: 17px; }
   .tiles { display: grid; grid-template-columns: repeat(6, 1fr); border-bottom: 1px solid var(--thin); }
@@ -313,25 +318,36 @@ function block2(k) {
 }
 
 const MON = ["янв", "фев", "мар", "апр", "май", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"];
+const TEIL_FARBE = ["#1F3864", "#FF5050", "#BFBFBF", "#595959"];   // обычные, промо, уценка, сотрудники
+const TEIL_NAME = ["обычные", "промо", "уценка", "сотр. −10%"];
 function histogramm(k) {
   const mo = k.monate || [];
   if (!mo.length) return "";
-  const W = 360, H = 150, top = 16, bottom = 22, n = mo.length, bw = W / n;
+  const W = 360, H = 160, top = 16, bottom = 22, n = mo.length, bw = W / n;
   const max = Math.max(1, ...mo.map(x => x[1]));
   let svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" role="img" aria-label="продажи по месяцам">';
   mo.forEach((x, i) => {
-    const v = x[1], h = (H - top - bottom) * v / max, xx = i * bw + 4, y = H - bottom - h;
-    const aktuell = i === n - 1;
-    svg += '<rect x="' + xx + '" y="' + y + '" width="' + (bw - 8) + '" height="' + Math.max(h, v > 0 ? 1 : 0) +
-      '" rx="2" fill="' + (aktuell ? "#9DB3D9" : "#1F3864") + '"></rect>';
-    svg += '<text x="' + (xx + (bw - 8) / 2) + '" y="' + (y - 3) + '" font-size="10" text-anchor="middle" fill="#111">' +
-      (v ? fmt(Math.round(v)) : "") + '</text>';
+    const total = x[1], teile = x[2] || [total, 0, 0, 0];
+    const xx = i * bw + 4, w = bw - 8, aktuell = i === n - 1;
+    let y = H - bottom;
+    teile.forEach((t, j) => {                     // снизу вверх: обычные, промо, уценка, сотрудники
+      if (!t) return;
+      const h = (H - top - bottom) * t / max;
+      y -= h;
+      svg += '<rect x="' + xx + '" y="' + y + '" width="' + w + '" height="' + Math.max(h, 1) + '" fill="' + TEIL_FARBE[j] +
+        '"' + (aktuell ? ' fill-opacity="0.55"' : '') + '><title>' + TEIL_NAME[j] + ': ' + fmt(Math.round(t)) + '</title></rect>';
+    });
+    svg += '<text x="' + (xx + w / 2) + '" y="' + (y - 3) + '" font-size="10" text-anchor="middle" fill="#111">' +
+      (total ? fmt(Math.round(total)) : "") + '</text>';
     const m = +x[0].slice(5, 7) - 1;
-    svg += '<text x="' + (xx + (bw - 8) / 2) + '" y="' + (H - 7) + '" font-size="10" text-anchor="middle" fill="#666">' +
+    svg += '<text x="' + (xx + w / 2) + '" y="' + (H - 7) + '" font-size="10" text-anchor="middle" fill="#666">' +
       MON[m] + (m === 0 ? "'" + x[0].slice(2, 4) : "") + '</text>';
   });
   svg += '</svg>';
-  return '<div class="hist"><div class="ht">продажи, шт в месяц (12 мес; последний — текущий, неполный)</div>' + svg + '</div>';
+  const leg = TEIL_NAME.map((t, j) => '<span style="display:inline-flex;align-items:center;gap:3px;margin-right:9px">' +
+    '<span style="width:10px;height:10px;border-radius:2px;background:' + TEIL_FARBE[j] + '"></span>' + t + '</span>').join("");
+  return '<div class="hist"><div class="ht">продажи, шт в месяц (12 мес; последний — текущий, неполный)</div>' + svg +
+    '<div class="ht" style="padding-bottom:4px">' + leg + '</div></div>';
 }
 
 function zeige(a) {
@@ -376,9 +392,9 @@ function zeige(a) {
       tile("промо W+1", k.w1 || "", k.w1 ? "r" : "") +
     '</div>' +
     '<div class="unten">' +
-      tileH("SL", [["РЦ", k.sl_rz], ["маг", sl]].map(x => '<span class="slz' +
+      '<div class="slbox">' + [["SL·РЦ", k.sl_rz], ["SL·маг", sl]].map(x => '<span class="slz' +
         ((x[1] !== null && x[1] !== undefined && x[1] < DATA.sl_rot) ? ' rot' : '') + '"><i>' + x[0] + '</i> ' +
-        (x[1] === null || x[1] === undefined ? "—" : x[1] + "%") + '</span>').join(""), "") +
+        (x[1] === null || x[1] === undefined ? "—" : x[1] + "%") + '</span>').join("") + '</div>' +
       tile("MHD", restl === null || restl === undefined ? "—" : restl + "д", (restl !== null && restl !== undefined && restl < DATA.mhd_rot) ? "r" : "") +
       tile("уценка", k.uc ? fmt(k.uc) : "—", k.uc ? "o" : "") +
       '<div class="verdikt" style="background:#' + k.vfill + ';color:#' + k.vfont + '">' + esc(k.vtext) + '</div>' +
