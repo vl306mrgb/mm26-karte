@@ -111,7 +111,7 @@
 <script>
 "use strict";
 const ITER = 250000;
-let DATA = null;
+let DATA = null, PW = null, AKTUELL = null;
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const fmt = (v) => (v === null || v === undefined || v === "") ? "—" : String(v).replace(".", ",");
@@ -145,20 +145,58 @@ async function start() {
   catch (e) { $("stand").textContent = "нет данных"; $("info").innerHTML = '<div class="msg err">Не удалось загрузить данные: ' + esc(e.message) + '</div>'; return; }
   const pw = lsGet("mm26pw");
   if (pw) {
-    try { DATA = await entschluesseln(buf, pw); return bereit(); }
+    try { DATA = await entschluesseln(buf, pw); PW = pw; return bereit(); }
     catch (e) { lsDel("mm26pw"); }
   }
   $("login").style.display = "";
   $("pwok").onclick = async () => {
     const p = $("pw").value;
     $("pwok").disabled = true;
-    try { DATA = await entschluesseln(buf, p); lsSet("mm26pw", p); $("login").style.display = "none"; bereit(); }
+    try { DATA = await entschluesseln(buf, p); PW = p; lsSet("mm26pw", p); $("login").style.display = "none"; bereit(); }
     catch (e) { $("info").innerHTML = '<div class="msg err">Пароль не подошёл.</div>'; }
     $("pwok").disabled = false;
   };
 }
 
+// ---------- фото из пакетов fotos_N.enc (скачиваются один раз, дальше из памяти телефона) ----------
+const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n;
+  for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function crc32(str) { const b = new TextEncoder().encode(str); let c = 0xFFFFFFFF;
+  for (const x of b) c = CRC[(c ^ x) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+let FOTOKEY = null; const SHARD = {};
+function shardUrl(i) { return "fotos_" + i + ".enc?v=" + DATA.fotos.v[i]; }
+async function fotoKey() {
+  if (!FOTOKEY) {
+    const salt = Uint8Array.from(atob(DATA.fotos.salt), c => c.charCodeAt(0));
+    const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(PW), "PBKDF2", false, ["deriveKey"]);
+    FOTOKEY = await crypto.subtle.deriveKey({ name: "PBKDF2", salt, iterations: ITER, hash: "SHA-256" },
+      base, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
+  }
+  return FOTOKEY;
+}
+function ladeShard(i) {
+  if (!SHARD[i]) SHARD[i] = (async () => {
+    const r = await fetch(shardUrl(i));
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const buf = new Uint8Array(await r.arrayBuffer());
+    const gz = await crypto.subtle.decrypt({ name: "AES-GCM", iv: buf.slice(4, 16) }, await fotoKey(), buf.slice(16));
+    const t = await new Response(new Blob([gz]).stream().pipeThrough(new DecompressionStream("gzip"))).text();
+    return JSON.parse(t);
+  })().catch(e => { delete SHARD[i]; return {}; });
+  return SHARD[i];
+}
+async function holeFoto(a) {
+  if (!DATA.fotos || !DATA.fotos.n) return null;
+  const pack = await ladeShard(crc32(a) % DATA.fotos.n);
+  return pack[a] || null;
+}
+function fotosVorladen() {      // скачать все пакеты в память телефона (без расшифровки), чтобы работало без сети
+  if (!DATA.fotos || !DATA.fotos.n) return;
+  for (let i = 0; i < DATA.fotos.n; i++) fetch(shardUrl(i)).catch(() => {});
+}
+
 function bereit() {
+  setTimeout(fotosVorladen, 1500);
   $("info").innerHTML = "";
   $("stand").innerHTML = "данные: " + esc(DATA.stand) + "<br>KW " + esc(DATA.kw);
   $("app").style.display = "";
@@ -220,6 +258,7 @@ function tile(label, val, cls) {
 function zeige(a) {
   const k = DATA.items[a];
   history.replaceState(null, "", "#" + a);
+  AKTUELL = a;
   $("code").value = "";
   if (!k.in_kat) { $("out").innerHTML = '<div class="msg err">' + esc(k.art) + ': нет в каталоге.</div>'; return; }
   const lc = k.lc && k.lc !== "0" ? k.lc : "";
@@ -284,6 +323,9 @@ function zeige(a) {
   $("out").innerHTML = html;
   bindLinks();
   window.scrollTo({ top: 0, behavior: "smooth" });
+  if (!k.foto) holeFoto(a).then(b => {
+    if (b && AKTUELL === a) { const f = document.querySelector(".karte .foto"); if (f) f.innerHTML = '<img alt="" src="data:image/jpeg;base64,' + b + '">'; }
+  });
 }
 
 // ---------- сканер ----------

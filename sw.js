@@ -1,5 +1,6 @@
 // MM26 Karte - service worker: приложение работает без сети, данные - сначала из сети, иначе последняя копия.
-const APP = "mm26-app-v2";
+const APP = "mm26-app-v3";
+const FOTOS = "mm26-fotos";
 const DATA = "mm26-data";
 const SHELL = ["./", "index.html", "manifest.webmanifest", "icon-192.png", "icon-512.png"];
 
@@ -8,11 +9,25 @@ self.addEventListener("install", (e) => {
 });
 self.addEventListener("activate", (e) => {
   e.waitUntil(caches.keys().then((ks) => Promise.all(
-    ks.filter((k) => k !== APP && k !== DATA).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
+    ks.filter((k) => k !== APP && k !== DATA && k !== FOTOS).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
 });
 self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
   if (url.origin !== location.origin) return;
+  if (/\/fotos_\d+\.enc$/.test(url.pathname)) {      // пакет фото: версия в ?v=, берём из памяти, если есть
+    e.respondWith(caches.open(FOTOS).then(async (c) => {
+      const hit = await c.match(e.request);
+      if (hit) return hit;
+      const r = await fetch(e.request);
+      if (r.ok) {
+        const alt = await c.keys();
+        await Promise.all(alt.filter((q) => new URL(q.url).pathname === url.pathname).map((q) => c.delete(q)));
+        await c.put(e.request, r.clone());
+      }
+      return r;
+    }));
+    return;
+  }
   if (url.pathname.endsWith("/data.enc")) {
     e.respondWith(
       fetch(e.request, { cache: "no-store" }).then((r) => {
