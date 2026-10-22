@@ -598,6 +598,14 @@ function tageBis(iso) {
   const d = new Date(iso + "T00:00:00"), h = new Date(); h.setHours(0, 0, 0, 0);
   return Math.round((d - h) / 86400000);
 }
+function isoDatum(v) {          // "2026-10-30" | "Fri Oct 30 2026 00:00:00 GMT+0100" | "2026-10-29T23:00:00.000Z" -> "2026-10-30"
+  const t = String(v || "");
+  if (/^\d{4}-\d{2}-\d{2}$/.test(t)) return t;
+  const d = new Date(t);
+  if (isNaN(d)) return "";
+  const ld = /T\d{2}:\d{2}.*Z$/.test(t) ? new Date(d.getTime() + 12 * 3600000) : d;   // UTC-полночь -> тот же день
+  return ld.getFullYear() + "-" + String(ld.getMonth() + 1).padStart(2, "0") + "-" + String(ld.getDate()).padStart(2, "0");
+}
 function dmy(iso) { return iso ? iso.slice(8, 10) + "." + iso.slice(5, 7) + "." + iso.slice(2, 4) : ""; }
 function uuid() { return "m" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 
@@ -620,7 +628,7 @@ async function mhdSync() {
   try {
     const r = await fetch(MHD.url() + "?action=list&secret=" + encodeURIComponent(MHD.key()) + "&t=" + Date.now());
     const j = await r.json();
-    if (j.ok) MHD.setListe(j.liste);
+    if (j.ok) MHD.setListe(j.liste.map(x => Object.assign(x, { mhd: isoDatum(x.mhd) })));
   } catch (err) { return false; }
   return true;
 }
