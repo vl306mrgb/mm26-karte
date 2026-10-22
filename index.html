@@ -67,6 +67,7 @@
   table.kreise { width: 100%; border-collapse: collapse; }
   table.kreise th { font-size: 12px; color: var(--muted); font-weight: 600; padding: 2px; }
   table.kreise td { border: 1px solid var(--thin); text-align: center; padding: 3px 0 1px; }
+  table.kreise td.lief { background: #FFF59D; box-shadow: inset 0 0 0 3px #FFE600; }
   table.kreise td.kw { border: 0; font-size: 12px; color: var(--muted); width: 30px; }
   .mapz { font-size: 12px; color: #1F4E9E; margin: 6px 2px -4px; }
   table.grid td .pct { position: absolute; right: 3px; bottom: 1px; font-size: 7.5px; color: #808080; line-height: 1; }
@@ -167,7 +168,7 @@ function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
 function lsDel(k) { try { localStorage.removeItem(k); } catch (e) {} }
 
 async function holeBlob() {
-  const r = await fetch("data.enc", { cache: "no-store" });
+  const r = await fetch("data.enc?t=" + Date.now(), { cache: "no-store" });   // метка - мимо кеша GitHub (до 10 мин)
   if (!r.ok) throw new Error("data.enc: HTTP " + r.status);
   return new Uint8Array(await r.arrayBuffer());
 }
@@ -390,12 +391,14 @@ function kreisBlock(k) {
   const tage = ["пн", "вт", "ср", "чт", "пт", "сб"];
   let h = '<div class="hist"><table class="kreise"><tr><th></th>' + tage.map(t => '<th>' + t + '</th>').join("") + '</tr>';
   ["W-1", "W0"].forEach((w, j) => {
-    h += '<tr><td class="kw">' + w + '</td>' + (kr[j] || []).map(seg => '<td>' + (seg ? kreis(seg) : '') + '</td>').join("") + '</tr>';
+    h += '<tr><td class="kw">' + w + '</td>' + (kr[j] || []).map(seg => '<td' + (seg && seg[3] ? ' class="lief"' : '') + '>' + (seg ? kreis(seg) : '') + '</td>').join("") + '</tr>';
   });
   h += '</table><div class="ht" style="padding:4px 4px 4px">' +
     [["в корзине (терминал)", 0], ["заказан", 1], ["на РЦ 8–10 ч", 2]].map(x =>
       '<span style="display:inline-flex;align-items:center;gap:3px;margin-right:9px"><span style="width:10px;height:10px;border-radius:5px;background:' +
-      KREIS_FARBE[x[1]] + '"></span>' + x[0] + '</span>').join("") + '</div></div>';
+      KREIS_FARBE[x[1]] + '"></span>' + x[0] + '</span>').join("") +
+    '<span style="display:inline-flex;align-items:center;gap:3px"><span style="width:12px;height:10px;background:#FFF59D;box-shadow:inset 0 0 0 2px #FFE600"></span>поставка</span>' +
+    '</div></div>';
   return h;
 }
 
