@@ -69,6 +69,20 @@
   table.kreise td { border: 1px solid var(--thin); text-align: center; padding: 3px 0 1px; }
   table.kreise td.lief { background: #FFF59D; box-shadow: inset 0 0 0 3px #FFE600; }
   table.kreise td.kw { border: 0; font-size: 12px; color: var(--muted); width: 30px; }
+  .hbtn { background: rgba(255,255,255,.15); color: #fff; font-size: 14px; padding: 6px 9px; border-radius: 7px; }
+  .mhdzeile { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 8px 2px -2px; }
+  .mhdbtn { font-size: 14px; padding: 6px 10px; }
+  .mhdtag { font-size: 13px; padding: 4px 7px; border-radius: 6px; background: #E2EFDA; font-weight: 600; }
+  .mhdtag.gelb, .mhdrow.gelb { background: #FFF2CC; } .mhdtag.rot, .mhdrow.rot { background: #F8CBAD; }
+  .mhdbox { background: #fff; border: 2px solid var(--top); border-radius: 8px; padding: 10px; margin: 8px 0; }
+  .mhdbox input[type=date], .mhdbox input[type=number], .mhdbox input[type=text] { font-size: 18px; padding: 8px; border: 1px solid #aaa; border-radius: 8px; }
+  .mhdtitel { font-weight: 700; margin-bottom: 8px; }
+  .mhdfoto { display: inline-block; background: #e3e6ec; padding: 10px 14px; border-radius: 8px; font-weight: 700; }
+  .mhdprev { max-width: 100%; max-height: 180px; margin-top: 8px; border-radius: 6px; }
+  .mhdrow { background: #fff; border-radius: 8px; padding: 8px 10px; margin: 6px 0; border: 1px solid #ccc; }
+  .mhdrow a { color: #111; display: block; margin: 3px 0; }
+  .mhdrow.zu { color: var(--muted); font-size: 13px; }
+  .mhdakt button { font-size: 13px; padding: 6px 9px; }
   .mapz { font-size: 12px; color: #1F4E9E; margin: 6px 2px -4px; }
   table.grid td .pct { position: absolute; right: 3px; bottom: 1px; font-size: 7.5px; color: #808080; line-height: 1; }
   .schwarz { background: #000; color: #fff; } .schwarz .lb { color: #ccc; }
@@ -131,6 +145,8 @@
 <body>
 <header>
   <div class="t">MM26 · карточка</div>
+  <button class="hbtn" id="mhdtab" style="display:none">📅 Сроки</button>
+  <button class="hbtn" id="einst" style="display:none">⚙</button>
   <div class="s" id="stand">загрузка…</div>
 </header>
 <main>
@@ -242,6 +258,10 @@ function fotosVorladen() {      // скачать все пакеты в пам�
 }
 
 function bereit() {
+  $("mhdtab").style.display = ""; $("einst").style.display = "";
+  $("mhdtab").onclick = () => { scanStop && scanAktiv && scanStop(); zeigeMhdListe(); };
+  $("einst").onclick = einstellungen;
+  setTimeout(mhdSync, 2500);
   setTimeout(fotosVorladen, 1500);
   $("info").innerHTML = "";
   $("stand").innerHTML = "данные: " + esc(DATA.stand) + "<br>KW " + esc(DATA.kw);
@@ -254,7 +274,8 @@ function bereit() {
     $("out").innerHTML = '<div class="msg">Сканер в этом браузере не поддерживается — откройте в Chrome на Android. Номер можно ввести вручную.</div>';
   }
   const h = decodeURIComponent(location.hash.slice(1));
-  if (h) suche(h);
+  if (h === "mhd") zeigeMhdListe();
+  else if (h) suche(h);
 }
 
 function sucheName(q) {
@@ -278,6 +299,7 @@ function suche(code) {
   if (!roh) return;
   if (!/^[0-9MmCcRr\s]+$/.test(roh) || /[^\d\s]{3,}/.test(roh)) return sucheName(roh);
   code = roh.replace(/\s+/g, "");
+  LETZTER_EAN = "";
   const items = DATA.items, a = artKey(code);
   const pluAlle = ((DATA.plu || {})[code] || []).map(x => typeof x === "string" ? { a: x, art: x, n: "" } : x);
   const pluTreffer = pluAlle.filter(x => x.a && items[x.a]).map(x => x.a);
@@ -307,6 +329,7 @@ function suche(code) {
   let gef = [];
   for (const v of varianten) if (DATA.ean[v]) { gef = DATA.ean[v]; break; }
   const treffer = gef.filter(x => items[x]);
+  if (treffer.length) LETZTER_EAN = code;
   if (treffer.length === 1) return zeige(treffer[0]);
   if (treffer.length > 1) {
     $("out").innerHTML = '<h3>Штрихкод ' + esc(code) + ' — несколько артикулов:</h3><div class="wahl">' +
@@ -476,6 +499,7 @@ function zeige(a) {
   const mapz = (k.zakaz_kak && k.zakaz_kak.length) ? '<div class="mapz">заказ как: ' + esc(k.zakaz_kak.join(", ")) + '</div>'
     : ((k.kassa_kak && k.kassa_kak.length) ? '<div class="mapz">на кассе как: ' + esc(k.kassa_kak.join(", ")) + '</div>' : '');
   let html = '<div class="titel">' + esc(k.name_de || k.name) + ' <span class="inh">' + esc(k.inhalt || "") + '</span></div>' + mapz +
+    '<div class="mhdzeile"></div>' +
     '<div class="karte">' +
     '<div class="k1"><div class="art">' + esc(k.art) + '</div><div class="abc">' + esc(k.abc || "") + '</div>' +
     '<div class="logi ' + (k.ost ? "" : "o") + '">' + esc(k.logi) + '</div><div class="lc ' + (lc ? "r" : "") + '">' + esc(lc) + '</div></div>' +
@@ -518,6 +542,7 @@ function zeige(a) {
   $("out").innerHTML = html;
   bindLinks();
   window.scrollTo({ top: 0, behavior: "smooth" });
+  zeigeMhdZeile(a);
   if (!k.foto) holeFoto(a).then(b => {
     if (b && AKTUELL === a) { const f = document.querySelector(".karte .foto"); if (f) f.innerHTML = '<img alt="" src="data:image/jpeg;base64,' + b + '">'; }
   });
@@ -554,6 +579,207 @@ function scanStop() {
   scanAktiv = false; clearTimeout(timer);
   if (stream) stream.getTracks().forEach(t => t.stop());
   stream = null; $("scan").style.display = "none"; $("scanbtn").textContent = "📷 Сканировать";
+}
+
+// ======================= MHD: отметки сроков годности на полке =======================
+// Записи уходят в Google-таблицу через Apps Script (URL + ключ вводятся один раз в ⚙).
+// Фото нигде не хранится: только чтобы прочитать дату (распознавание на телефоне).
+const MHD = {
+  url: () => lsGet("mm26mhd_url") || "",
+  key: () => lsGet("mm26mhd_key") || "",
+  liste() { try { return JSON.parse(lsGet("mm26mhd_list") || "[]"); } catch (e) { return []; } },
+  queue() { try { return JSON.parse(lsGet("mm26mhd_queue") || "[]"); } catch (e) { return []; } },
+  setListe(l) { lsSet("mm26mhd_list", JSON.stringify(l)); },
+  setQueue(q) { lsSet("mm26mhd_queue", JSON.stringify(q)); },
+};
+let LETZTER_EAN = "";
+
+function tageBis(iso) {
+  const d = new Date(iso + "T00:00:00"), h = new Date(); h.setHours(0, 0, 0, 0);
+  return Math.round((d - h) / 86400000);
+}
+function dmy(iso) { return iso ? iso.slice(8, 10) + "." + iso.slice(5, 7) + "." + iso.slice(2, 4) : ""; }
+function uuid() { return "m" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+
+async function mhdPost(obj) {
+  const r = await fetch(MHD.url(), { method: "POST", body: JSON.stringify(Object.assign({ secret: MHD.key() }, obj)), redirect: "follow" });
+  const j = await r.json();
+  if (!j.ok) throw new Error(j.fehler || "ошибка сервера");
+  return j;
+}
+async function mhdSync() {
+  if (!MHD.url()) return false;
+  let q = MHD.queue();
+  for (const e of q.slice()) {
+    try {
+      await mhdPost(e);
+      q = q.filter(x => !(x.id === e.id && x.action === e.action && x.status === e.status));
+      MHD.setQueue(q);
+    } catch (err) { break; }
+  }
+  try {
+    const r = await fetch(MHD.url() + "?action=list&secret=" + encodeURIComponent(MHD.key()) + "&t=" + Date.now());
+    const j = await r.json();
+    if (j.ok) MHD.setListe(j.liste);
+  } catch (err) { return false; }
+  return true;
+}
+function mhdAlle() {          // сервер + ещё не отправленное
+  const l = MHD.liste();
+  const ids = new Set(l.map(x => x.id));
+  const q = MHD.queue();
+  for (const e of q) {
+    if (e.action === "add" && !ids.has(e.id)) l.push(Object.assign({ status: "активен", offen: true }, e));
+    if (e.action === "status") { const x = l.find(y => y.id === e.id); if (x) { x.status = e.status; x.offen = true; } }
+  }
+  return l;
+}
+
+// ---------- распознавание даты на фото ----------
+let TESS = null;
+function ladeTesseract() {
+  if (window.Tesseract) return Promise.resolve();
+  if (TESS) return TESS;
+  TESS = new Promise((ok, fail) => {
+    const s = document.createElement("script");
+    s.src = "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js";
+    s.onload = ok; s.onerror = () => { TESS = null; fail(new Error("распознавание недоступно (нет сети?)")); };
+    document.head.appendChild(s);
+  });
+  return TESS;
+}
+function datumAusText(t) {
+  t = (t || "").replace(/[oO]/g, "0").replace(/[lI|]/g, "1").replace(/,/g, ".");
+  const heute = new Date(); heute.setHours(0, 0, 0, 0);
+  const kand = [];
+  const add = (y, m, d) => {
+    if (y < 100) y += 2000;
+    if (m < 1 || m > 12 || d < 1 || d > 31 || y < 2020 || y > 2040) return;
+    const dt = new Date(y, m - 1, d);
+    if (dt.getMonth() !== m - 1) return;
+    kand.push(dt);
+  };
+  let m;
+  const r1 = /(\d{1,2})\s*[.\/\-]\s*(\d{1,2})\s*[.\/\-]\s*(\d{2,4})/g;          // 25.10.2026 / 25/10/26
+  while ((m = r1.exec(t))) add(+m[3], +m[2], +m[1]);
+  const r2 = /(?:^|[^\d.])(\d{1,2})\s*[.\/]\s*(20\d{2})(?![\d.])/g;              // 10/2026 -> конец месяца
+  while ((m = r2.exec(t))) { const y = +m[2], mo = +m[1]; if (mo >= 1 && mo <= 12) kand.push(new Date(y, mo, 0)); }
+  if (!kand.length) {
+    const r3 = /(?:^|\D)(\d{2})(\d{2})(\d{2})(?:\D|$)/g;                          // 251026
+    while ((m = r3.exec(t))) add(+m[3], +m[2], +m[1]);
+  }
+  const gut = kand.filter(d => d >= new Date(heute.getTime() - 60 * 86400000)).sort((a, b) => a - b);
+  const d = gut[0] || kand[0];
+  if (!d) return "";
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+async function leseDatum(file, status) {
+  status.textContent = "читаю дату…";
+  await ladeTesseract();
+  const img = await createImageBitmap(file);
+  const c = document.createElement("canvas");
+  const sc = Math.min(1, 1600 / Math.max(img.width, img.height));
+  c.width = img.width * sc; c.height = img.height * sc;
+  const g = c.getContext("2d");
+  g.filter = "grayscale(1) contrast(1.6)";
+  g.drawImage(img, 0, 0, c.width, c.height);
+  const res = await Tesseract.recognize(c, "eng", { tessedit_char_whitelist: "0123456789./-: " });
+  return datumAusText(res.data.text);
+}
+
+// ---------- форма отметки ----------
+function mhdForm(a) {
+  const k = DATA.items[a];
+  if (!MHD.url()) { einstellungen(); return; }
+  const box = document.createElement("div");
+  box.className = "mhdbox";
+  box.innerHTML =
+    '<div class="mhdtitel">📅 Срок на полке · ' + esc(k.art) + '</div>' +
+    '<label class="mhdfoto">📷 Сфотографировать дату<input type="file" accept="image/*" capture="environment" hidden></label>' +
+    '<div class="mhdstatus klein"></div><img class="mhdprev" alt="" style="display:none">' +
+    '<div class="row" style="margin-top:8px"><input type="date" class="mhddat"><input type="number" class="mhdmenge" min="1" value="1" inputmode="numeric" style="max-width:80px"></div>' +
+    '<input type="text" class="mhdkom" placeholder="комментарий (необязательно)" style="margin-top:8px;width:100%">' +
+    '<div class="row" style="margin-top:8px"><button class="mhdok">Сохранить</button><button class="sec mhdab">Отмена</button></div>';
+  const ziel = document.querySelector(".mhdzeile");
+  ziel.after(box);
+  const fi = box.querySelector("input[type=file]"), st = box.querySelector(".mhdstatus"), pv = box.querySelector(".mhdprev");
+  const dat = box.querySelector(".mhddat");
+  fi.onchange = async () => {
+    const f = fi.files[0];
+    if (!f) return;
+    pv.src = URL.createObjectURL(f); pv.style.display = "block";
+    try {
+      const d = await leseDatum(f, st);
+      if (d) { dat.value = d; st.textContent = "распознано: " + dmy(d) + " — проверьте"; }
+      else st.textContent = "дату не распознал — выберите вручную";
+    } catch (e) { st.textContent = e.message + " — выберите дату вручную"; }
+  };
+  box.querySelector(".mhdab").onclick = () => { box.remove(); };
+  box.querySelector(".mhdok").onclick = async () => {
+    if (!dat.value) { st.textContent = "укажите дату"; return; }
+    const e = { action: "add", id: uuid(), art: k.art, ean: LETZTER_EAN, name: k.name_de || k.name || "",
+      mhd: dat.value, menge: +box.querySelector(".mhdmenge").value || 1, kommentar: box.querySelector(".mhdkom").value || "" };
+    const q = MHD.queue(); q.push(e); MHD.setQueue(q);
+    if (pv.src) URL.revokeObjectURL(pv.src);
+    box.remove();
+    zeigeMhdZeile(a);
+    st.textContent = "";
+    mhdSync().then(() => zeigeMhdZeile(a));
+  };
+}
+
+function zeigeMhdZeile(a) {
+  const el = document.querySelector(".mhdzeile");
+  if (!el) return;
+  const k = DATA.items[a];
+  const eig = mhdAlle().filter(x => x.status === "активен" && String(x.art) === String(k.art)).sort((x, y) => x.mhd < y.mhd ? -1 : 1);
+  el.innerHTML = '<button class="mhdbtn">📅 MHD</button>' +
+    eig.map(x => { const t = tageBis(x.mhd);
+      return '<span class="mhdtag ' + (t <= 3 ? "rot" : (t <= 7 ? "gelb" : "")) + '">' + dmy(x.mhd) + ' ×' + x.menge +
+        ' (' + (t < 0 ? "просрочен" : t + " дн") + ')' + (x.offen ? " ⏳" : "") + '</span>'; }).join("");
+  el.querySelector(".mhdbtn").onclick = () => mhdForm(a);
+}
+
+// ---------- вкладка "Сроки" ----------
+async function zeigeMhdListe() {
+  AKTUELL = null;
+  history.replaceState(null, "", "#mhd");
+  const out = $("out");
+  const render = () => {
+    const l = mhdAlle().sort((x, y) => (x.status === "активен") - (y.status === "активен") || (x.mhd < y.mhd ? -1 : 1)).reverse();
+    const aktiv = l.filter(x => x.status === "активен").sort((x, y) => x.mhd < y.mhd ? -1 : 1);
+    const zu = l.filter(x => x.status !== "активен");
+    let h = '<h3>Сроки на полке · активных ' + aktiv.length + '</h3>';
+    if (!aktiv.length) h += '<div class="msg">Пока нет отметок. Откройте карточку товара и нажмите «📅 MHD».</div>';
+    h += aktiv.map(x => { const t = tageBis(x.mhd);
+      return '<div class="mhdrow ' + (t <= 3 ? "rot" : (t <= 7 ? "gelb" : "")) + '">' +
+        '<div class="mhdkopf"><b>' + dmy(x.mhd) + '</b> · ' + (t < 0 ? "просрочен " + (-t) + " дн" : (t === 0 ? "сегодня" : "через " + t + " дн")) +
+        ' · ×' + x.menge + (x.offen ? " ⏳" : "") + '</div>' +
+        '<a href="#' + esc(artKey(x.art)) + '" data-a="' + esc(artKey(x.art)) + '">' + esc(x.art) + ' · ' + esc(x.name || "") + '</a>' +
+        (x.kommentar ? '<div class="klein">' + esc(x.kommentar) + '</div>' : '') +
+        '<div class="row mhdakt">' + ["уценён", "убран", "продан"].map(s => '<button class="sec" data-id="' + x.id + '" data-s="' + s + '">' + s + '</button>').join("") + '</div></div>';
+    }).join("");
+    if (zu.length) h += '<h3>Закрыто за 14 дней</h3>' + zu.map(x => '<div class="mhdrow zu">' + dmy(x.mhd) + ' · ' + esc(x.art) + ' · ' +
+      esc(x.name || "") + ' · <i>' + esc(x.status) + '</i></div>').join("");
+    out.innerHTML = h;
+    out.querySelectorAll("[data-a]").forEach(el => el.onclick = (e) => { e.preventDefault(); if (DATA.items[el.dataset.a]) zeige(el.dataset.a); });
+    out.querySelectorAll(".mhdakt button").forEach(b => b.onclick = () => {
+      const q = MHD.queue(); q.push({ action: "status", id: b.dataset.id, status: b.dataset.s }); MHD.setQueue(q);
+      render(); mhdSync().then(render);
+    });
+  };
+  render();
+  if (await mhdSync()) render();
+}
+
+// ---------- настройки ----------
+function einstellungen() {
+  const u = prompt("Адрес Google Apps Script (Web-App URL, заканчивается на /exec):", MHD.url());
+  if (u === null) return;
+  const s = prompt("Секретный ключ (как в свойстве SECRET скрипта):", MHD.key());
+  if (s === null) return;
+  lsSet("mm26mhd_url", u.trim()); lsSet("mm26mhd_key", s.trim());
+  mhdSync().then(ok => alert(ok ? "Подключено ✔" : "Не удалось подключиться — проверьте адрес и ключ"));
 }
 
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
