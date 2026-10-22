@@ -64,6 +64,10 @@
     font-size: 10px; line-height: 9px; font-weight: 600; }
   .treppe span { text-align: center; }
   .treppe .null { color: #9a9a9a; font-weight: 400; }
+  table.kreise { width: 100%; border-collapse: collapse; }
+  table.kreise th { font-size: 12px; color: var(--muted); font-weight: 600; padding: 2px; }
+  table.kreise td { border: 1px solid var(--thin); text-align: center; padding: 3px 0 1px; }
+  table.kreise td.kw { border: 0; font-size: 12px; color: var(--muted); width: 30px; }
   .mapz { font-size: 12px; color: #1F4E9E; margin: 6px 2px -4px; }
   table.grid td .pct { position: absolute; right: 3px; bottom: 1px; font-size: 7.5px; color: #808080; line-height: 1; }
   .schwarz { background: #000; color: #fff; } .schwarz .lb { color: #ccc; }
@@ -347,11 +351,13 @@ function block2(k) {
   h += '<tr><td class="kopf">последние<br>заказы</td>' +
     [0, 1, 2].map(i => {
       const x = lb[i], t = x ? (typeof x === "string" ? x : x.t) : "";
-      return zelle(["1", "2", "3"][i] + (x && x.app ? " · App" : ""), '<span class="blau">' + esc(t || "—") + '</span>');
+      return zelle(["1", "2", "3"][i] + (x && x.app ? " · App" : "") + (x && x.vb ? " · VB" : ""),
+        '<span class="blau">' + esc(t || "—") + '</span>', x && x.vb ? "o" : "");
     }).join("") + '</tr>';
   const lf = k.liefer || [];
   h += '<tr><td class="kopf">последние<br>поставки</td>' +
-    [0, 1, 2].map(i => zelle(["1", "2", "3"][i], esc(lf[i] ? lf[i].t : "—"), lf[i] && lf[i].offen ? "grauf" : "")).join("") + '</tr>';
+    [0, 1, 2].map(i => zelle(["1", "2", "3"][i] + (lf[i] && lf[i].vb ? " · VB" : ""), esc(lf[i] ? lf[i].t : "—"),
+      lf[i] && lf[i].offen ? "grauf" : (lf[i] && lf[i].vb ? "o" : ""))).join("") + '</tr>';
   h += '<tr><td class="kopf">промо KW</td>' +
     zelle("прошлое", esc(p[0] || "—")) +
     zelle("текущее", esc(p[1] || "—"), p[1] && p[1] !== "—" ? "r" : "") +
@@ -360,6 +366,37 @@ function block2(k) {
   if (k.lc_txt) h += '<tr><td class="kopf">смены<br>логистики</td><td colspan="3" class="links">' + esc(k.lc_txt) + '</td></tr>';
   if (k.uc_ant) h += '<tr><td class="kopf">доля уценки<br>W-3..W0</td><td colspan="3" class="links">' + esc(k.uc_ant) + '% продаж</td></tr>';
   return h + '</table></div>';
+}
+
+const KREIS_FARBE = ["#70AD47", "#4472C4", "#C0504D"];   // корзина, заказ, РЦ утром
+function kreis(seg) {
+  // 3 сектора по 120°: 0 сверху-слева, 1 справа, 2 снизу
+  const r = 15, c = 17, start = [-210, -90, 30];
+  let svg = '<svg viewBox="0 0 34 34" width="34" height="34">';
+  for (let i = 0; i < 3; i++) {
+    const a0 = start[i] * Math.PI / 180, a1 = (start[i] + 120) * Math.PI / 180;
+    const x0 = c + r * Math.cos(a0), y0 = c + r * Math.sin(a0), x1 = c + r * Math.cos(a1), y1 = c + r * Math.sin(a1);
+    const v = seg[i];
+    const fill = v === true ? KREIS_FARBE[i] : (v === false ? "#E4E4E4" : "#FFFFFF");   // нет - светло-серый, нет данных - белый
+    svg += '<path d="M' + c + ',' + c + ' L' + x0.toFixed(2) + ',' + y0.toFixed(2) + ' A' + r + ',' + r + ' 0 0 1 ' +
+      x1.toFixed(2) + ',' + y1.toFixed(2) + ' Z" fill="' + fill + '" stroke="#fff" stroke-width="1.5"' +
+      (v === null ? ' stroke-dasharray="2 2"' : '') + '></path>';
+  }
+  return svg + '<circle cx="17" cy="17" r="15" fill="none" stroke="#C8C8C8" stroke-width="0.6"></circle></svg>';
+}
+function kreisBlock(k) {
+  const kr = k.kreise;
+  if (!kr) return "";
+  const tage = ["пн", "вт", "ср", "чт", "пт", "сб"];
+  let h = '<div class="hist"><table class="kreise"><tr><th></th>' + tage.map(t => '<th>' + t + '</th>').join("") + '</tr>';
+  ["W-1", "W0"].forEach((w, j) => {
+    h += '<tr><td class="kw">' + w + '</td>' + (kr[j] || []).map(seg => '<td>' + (seg ? kreis(seg) : '') + '</td>').join("") + '</tr>';
+  });
+  h += '</table><div class="ht" style="padding:4px 4px 4px">' +
+    [["в корзине (терминал)", 0], ["заказан", 1], ["на РЦ 8–10 ч", 2]].map(x =>
+      '<span style="display:inline-flex;align-items:center;gap:3px;margin-right:9px"><span style="width:10px;height:10px;border-radius:5px;background:' +
+      KREIS_FARBE[x[1]] + '"></span>' + x[0] + '</span>').join("") + '</div></div>';
+  return h;
 }
 
 const MON = ["янв", "фев", "мар", "апр", "май", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"];
@@ -462,7 +499,7 @@ function zeige(a) {
       '<div class="verdikt" style="background:#' + k.vfill + ';color:#' + k.vfont + '">' + esc(k.vtext) + '</div>' +
     '</div></div>';
 
-  html += block2(k) + histogramm(k) + wgZeile;
+  html += block2(k) + kreisBlock(k) + histogramm(k) + wgZeile;
 
   if (!(k.orte || []).length) {
     html += '<h3>Вне планограммы' + (k.wg ? ' · ' + esc(k.wg) : '') + '</h3>';
