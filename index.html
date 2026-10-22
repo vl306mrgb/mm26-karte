@@ -80,7 +80,7 @@
   .mhdfoto { display: inline-block; background: #e3e6ec; padding: 10px 14px; border-radius: 8px; font-weight: 700; }
   .mhdprev { max-width: 100%; max-height: 180px; margin-top: 8px; border-radius: 6px; }
   .mhdrow { background: #fff; border-radius: 8px; padding: 8px 10px; margin: 6px 0; border: 1px solid #ccc; }
-  .mhdrow a { color: #111; display: block; margin: 3px 0; }
+  .mhdrow a, .mhdname { color: #111; display: block; margin: 3px 0; }
   .mhdrow.zu { color: var(--muted); font-size: 13px; }
   .mhdakt button { font-size: 13px; padding: 6px 9px; }
   .mapz { font-size: 12px; color: #1F4E9E; margin: 6px 2px -4px; }
@@ -743,7 +743,7 @@ function zeigeMhdZeile(a) {
   const eig = mhdAlle().filter(x => x.status === "активен" && String(x.art) === String(k.art)).sort((x, y) => x.mhd < y.mhd ? -1 : 1);
   el.innerHTML = '<button class="mhdbtn">📅 MHD</button>' +
     eig.map(x => { const t = tageBis(x.mhd);
-      return '<span class="mhdtag ' + (t <= 3 ? "rot" : (t <= 7 ? "gelb" : "")) + '">' + dmy(x.mhd) + ' ×' + x.menge +
+      return '<span class="mhdtag ' + (t <= 3 ? "rot" : (t <= 7 ? "gelb" : "")) + '">' + dmy(x.mhd) + (x.menge ? ' ×' + x.menge : '') +
         ' (' + (t < 0 ? "просрочен" : t + " дн") + ')' + (x.offen ? " ⏳" : "") + '</span>'; }).join("");
   el.querySelector(".mhdbtn").onclick = () => mhdForm(a);
 }
@@ -762,8 +762,9 @@ async function zeigeMhdListe() {
     h += aktiv.map(x => { const t = tageBis(x.mhd);
       return '<div class="mhdrow ' + (t <= 3 ? "rot" : (t <= 7 ? "gelb" : "")) + '">' +
         '<div class="mhdkopf"><b>' + dmy(x.mhd) + '</b> · ' + (t < 0 ? "просрочен " + (-t) + " дн" : (t === 0 ? "сегодня" : "через " + t + " дн")) +
-        ' · ×' + x.menge + (x.offen ? " ⏳" : "") + '</div>' +
-        '<a href="#' + esc(artKey(x.art)) + '" data-a="' + esc(artKey(x.art)) + '">' + esc(x.art) + ' · ' + esc(x.name || "") + '</a>' +
+        (x.menge ? ' · ×' + x.menge : '') + (x.offen ? " ⏳" : "") + '</div>' +
+        (x.art && DATA.items[artKey(x.art)] ? '<a href="#' + esc(artKey(x.art)) + '" data-a="' + esc(artKey(x.art)) + '">' + esc(x.art) + ' · ' + esc(x.name || "") + '</a>'
+          : '<div class="mhdname">' + esc(x.art ? x.art + ' · ' : '') + esc(x.name || "") + '</div>') +
         (x.kommentar ? '<div class="klein">' + esc(x.kommentar) + '</div>' : '') +
         '<div class="row mhdakt">' + ["уценён", "убран", "продан"].map(s => '<button class="sec" data-id="' + x.id + '" data-s="' + s + '">' + s + '</button>').join("") + '</div></div>';
     }).join("");
