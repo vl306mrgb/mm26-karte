@@ -85,6 +85,11 @@
   table.tage .zt.spaet { color: #8a8a8a; } table.tage .zt.frueh { color: #d00000; font-weight: 700; }
   .legende { font-size: 10px; color: var(--muted); padding: 3px 4px 4px; white-space: nowrap; overflow: hidden; }
   .legende span { display: inline-flex; align-items: center; gap: 2px; margin-right: 6px; }
+  .mhdreihe { display: flex; align-items: flex-end; gap: 8px; margin-top: 8px; }
+  .mhdreihe .mhdzeile { flex: 1; margin: 0 2px -2px; }
+  .krtop { display: flex; gap: 8px; }
+  .krtop .kk { display: flex; flex-direction: column; align-items: center; line-height: 1; }
+  .krtop .kk i { font-style: normal; font-size: 9px; color: var(--muted); margin-top: 1px; }
   .shkbtn { width: 100%; margin: 14px 0 6px; }
   .shkitem { background: #fff; border: 1px solid var(--thin); border-radius: 6px; padding: 10px 6px 4px; margin: 8px 0; text-align: center; }
   .verdzeile { padding: 5px 8px; font-weight: 800; font-size: 15px; text-align: center; border-top: 1px solid var(--thin); }
@@ -584,7 +589,7 @@ function zeige(a) {
   const mapz = (k.zakaz_kak && k.zakaz_kak.length) ? '<div class="mapz">заказ как: ' + esc(k.zakaz_kak.join(", ")) + '</div>'
     : ((k.kassa_kak && k.kassa_kak.length) ? '<div class="mapz">на кассе как: ' + esc(k.kassa_kak.join(", ")) + '</div>' : '');
   let html = '<div class="titel">' + esc(k.name_de || k.name) + ' <span class="inh">' + esc(k.inhalt || "") + '</span></div>' + mapz +
-    '<div class="mhdzeile"></div>' +
+    '<div class="mhdreihe"><div class="mhdzeile"></div><div class="krtop">@@KREISE@@</div></div>' +
     '<div class="karte"><div class="kopf"><div class="foto">' + fotoHtml + '</div><div class="kgr">' +
       '<div class="art"' + (String(k.art).length > 5 ? ' style="font-size:' + (String(k.art).length > 7 ? 13 : 16) + 'px"' : '') + '>' + esc(k.art) + '</div><div class="abc">' + esc(k.abc || "") + '</div>' +
       '<div class="logi ' + (k.ost ? "" : "o") + '">' + esc(k.logi) + '</div><div class="lc ' + (lc ? "r" : "") + '">' + esc(lc) + '</div>' +
@@ -597,14 +602,13 @@ function zeige(a) {
       tile("KWk", fmt(k.kpr), "") + tile("FSk", fmt(k.kps), "") +
       tile("сезон", (k.sez || "").replace(" прерыв.", " прер"), "g") +
     '</div></div></div>';
-  const kreiseKlein = (k.rek ? rundKreis("#70AD47", fmt(k.rek), "#fff", 28) : rundKreis("#C0504D", "—", "#fff", 28)) +
-    (k.w1 ? rundKreis("#FF5050", (String(k.w1).match(/\d+/) || [""])[0] + (/↻/.test(k.w1) ? "↻" : ""), "#fff", 28)
-          : rundKreis("#E4E4E4", "—", "#9a9a9a", 28));
+  html = html.replace("@@KREISE@@", '<span class="kk">' + (k.rek ? rundKreis("#70AD47", fmt(k.rek), "#fff", 34) : rundKreis("#C0504D", "—", "#fff", 34)) +
+    '<i>заказ уп</i></span><span class="kk">' + (k.w1 ? rundKreis("#FF5050", (String(k.w1).match(/\d+/) || [""])[0] + (/↻/.test(k.w1) ? "↻" : ""), "#fff", 34)
+      : rundKreis("#E4E4E4", "—", "#9a9a9a", 34)) + '<i>промо W+1</i></span>');
   const rechts1 =
     tile("посл. чек", (k.last_check || "—").slice(0, 5), chekCls) +
     tile("дней назад", tg === null ? "—" : tg, chekCls) +
-    tileH("MHD", '<span class="v">' + (restl === null || restl === undefined ? "—" : restl + "д") + '</span>' +
-      '<span class="kr2m" title="заказ уп · промо W+1">' + kreiseKlein + '</span>',
+    tile("MHD", restl === null || restl === undefined ? "—" : restl + "д",
       (restl !== null && restl !== undefined && restl < DATA.mhd_rot) ? "r" : "");
   const rechts2 =
     '<div class="slbox">' + [["SL·РЦ", k.sl_rz], ["SL·маг", sl]].map(x => '<span class="slz' +
