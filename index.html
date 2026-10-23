@@ -40,7 +40,8 @@
   .k1 > div { padding: 6px 8px; display: flex; align-items: center; justify-content: center; font-size: 17px; }
   .k1 .art { font-weight: 800; font-size: 26px; justify-content: flex-start; }
   .k1 .abc { background: var(--grau); font-weight: 700; min-width: 36px; }
-  .k1 .logi { min-width: 90px; }
+  .k1 .logi { min-width: 64px; max-width: 96px; font-size: 14px; line-height: 1.1; text-align: center; overflow: hidden;
+    overflow-wrap: anywhere; }
   .k1 .lc { min-width: 34px; font-weight: 800; }
   .k1 .kr2 { gap: 6px; padding: 3px 6px; }
   .kr2 .kk { display: flex; flex-direction: column; align-items: center; line-height: 1; }
@@ -51,6 +52,7 @@
   .ul { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 2px; }
   table.grid td.summe { border: 0; font-size: 11px; color: #8a8a8a; padding: 1px 2px 3px; font-weight: 400; }
   table.grid td.lbl.s { writing-mode: horizontal-tb; transform: none; font-size: 9px; }
+  .ez .lb { white-space: nowrap; font-size: 9.5px; letter-spacing: -0.3px; }
   .verdzeile { padding: 5px 8px; font-weight: 800; font-size: 15px; text-align: center; border-top: 1px solid var(--thin); }
   .mitte { display: grid; grid-template-columns: 32% 15% 1fr; border-bottom: 1px solid var(--thin); }
   .kspalte { display: flex; flex-direction: column; justify-content: flex-end; gap: 6px; padding: 4px 4px 8px;
@@ -70,14 +72,17 @@
   .promo { background: var(--rot); }
   table.grid td { position: relative; }
   table.grid td.tr { padding: 2px 3px; }
-  .treppe { display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, 12px);
-    font-size: 13px; line-height: 12px; font-weight: 600; }
+  .treppe { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: repeat(4, 12px);
+    font-size: 10px; line-height: 12px; font-weight: 600; }
+  table.grid td { overflow: hidden; }
   .treppe span { display: flex; align-items: center; justify-content: center; }
   .treppe span { text-align: center; }
   .treppe .null { color: #9a9a9a; font-weight: 400; }
   table.kreise { width: 100%; border-collapse: collapse; }
   table.kreise th { font-size: 12px; color: var(--muted); font-weight: 600; padding: 2px; }
   table.kreise td { border: 1px solid var(--thin); text-align: center; padding: 3px 0 1px; }
+  table.kreise td { position: relative; }
+  table.kreise .lq { position: absolute; right: 2px; top: 1px; font-size: 10px; line-height: 1; color: #7a7a7a; font-weight: 700; }
   table.kreise td.lief { background: #FFF59D; box-shadow: inset 0 0 0 3px #FFE600; }
   table.kreise td.kw { border: 0; font-size: 12px; color: var(--muted); width: 30px; }
   .hbtn { background: rgba(255,255,255,.15); color: #fff; font-size: 14px; padding: 6px 9px; border-radius: 7px; }
@@ -391,7 +396,8 @@ function block2(k) {
     zelle("прошлое", esc(p[0] || "—")) +
     zelle("текущее", esc(p[1] || "—"), p[1] && p[1] !== "—" ? "r" : "") +
     zelle("следующее", esc(p[2] || "—"), p[2] && p[2] !== "—" ? "o" : "") + '</tr>';
-  h += '<tr><td class="kopf">причина</td><td colspan="3" class="links">' + esc(k.grund || "—") + '</td></tr>';
+  h += '<tr><td class="kopf">вердикт</td><td colspan="3" class="links" style="background:#' + k.vfill + ';color:#' + k.vfont +
+    '"><b>' + esc(k.vtext) + '</b>' + (k.grund ? '<br>' + esc(k.grund) : '') + '</td></tr>';
   if (k.lc_txt) h += '<tr><td class="kopf">смены<br>логистики</td><td colspan="3" class="links">' + esc(k.lc_txt) + '</td></tr>';
   if (k.uc_ant) h += '<tr><td class="kopf">доля уценки<br>W-3..W0</td><td colspan="3" class="links">' + esc(k.uc_ant) + '% продаж</td></tr>';
   return h + '</table></div>';
@@ -411,6 +417,12 @@ function kreis(seg) {
       x1.toFixed(2) + ',' + y1.toFixed(2) + ' Z" fill="' + fill + '" stroke="#fff" stroke-width="1.5"' +
       (v === null ? ' stroke-dasharray="2 2"' : '') + '></path>';
   }
+  [[0, seg[4], -150], [1, seg[5], -30]].forEach(([i, q, w]) => {      // белая цифра: коробок в корзине / заказано
+    if (seg[i] !== true || !q) return;
+    const t = fmt(q), x = c + 8.2 * Math.cos(w * Math.PI / 180), y = c + 8.2 * Math.sin(w * Math.PI / 180);
+    svg += '<text x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" dy="0.35em" text-anchor="middle" font-size="' +
+      (t.length > 2 ? 7 : 9.5) + '" font-weight="800" fill="#fff">' + t + '</text>';
+  });
   return svg + '<circle cx="17" cy="17" r="15" fill="none" stroke="#C8C8C8" stroke-width="0.6"></circle></svg>';
 }
 function kreisBlock(k) {
@@ -419,7 +431,8 @@ function kreisBlock(k) {
   const tage = ["пн", "вт", "ср", "чт", "пт", "сб"];
   let h = '<div class="hist"><table class="kreise"><tr><th></th>' + tage.map(t => '<th>' + t + '</th>').join("") + '</tr>';
   (kr.length === 3 ? ["W-2", "W-1", "W0"] : ["W-1", "W0"]).forEach((w, j) => {
-    h += '<tr><td class="kw">' + w + '</td>' + (kr[j] || []).map(seg => '<td' + (seg && seg[3] ? ' class="lief"' : '') + '>' + (seg ? kreis(seg) : '') + '</td>').join("") + '</tr>';
+    h += '<tr><td class="kw">' + w + '</td>' + (kr[j] || []).map(seg => '<td' + (seg && seg[3] ? ' class="lief"' : '') + '>' +
+    (seg && seg[3] && seg[6] ? '<span class="lq">' + fmt(seg[6]) + '</span>' : '') + (seg ? kreis(seg) : '') + '</td>').join("") + '</tr>';
   });
   h += '</table><div class="ht" style="padding:4px 4px 4px">' +
     [["в корзине (терминал)", 0], ["заказан", 1], ["на РЦ 8–10 ч", 2]].map(x =>
@@ -479,7 +492,7 @@ function ucKreis(anteil, d) {
 function zahl(v, anteil, kart, d) {
   if (v === null || v === undefined) return "";
   let t = fmt(v);
-  const ul = kart && v > 0 && v >= kart / 2;
+  const ul = kart > 1 && v > 0 && v >= kart / 2;          // для весовых (1 kg) не подчёркиваем
   if (ul) t = '<span class="ul">' + t + '</span>';
   if (anteil && anteil > 0) return '<span class="uz" style="width:' + d + 'px;height:' + d + 'px" title="уценка ' +
     Math.round(anteil * 100) + '%">' + ucKreis(anteil, d) + '<b>' + t + '</b></span>';
@@ -513,7 +526,7 @@ function zeige(a) {
           for (let c = 0; c < 4; c++) {
             const x = (c === d) ? t4[d] : undefined;
             tr += (x === undefined || x === null) ? '<span></span>'
-              : '<span class="' + (x === 0 ? "null" : "") + '">' + zahl(x, (uct[j] || [])[d], kart, 15) + '</span>';
+              : '<span class="' + (x === 0 ? "null" : "") + '">' + zahl(x, (uct[j] || [])[d], kart, 12) + '</span>';
           }
         }
         grid += '<td class="tr ' + ((k.promo_w || [])[j] ? "promo" : "") + '">' + tr + '</div></td>';
@@ -573,12 +586,11 @@ function zeige(a) {
       ((k.lager !== null && k.lager <= 0)
         ? tileH("РЦ", '<span class="v">0</span><span class="klz">&gt;' + 10 + ': ' + esc(k.rz10 || "давно") + '</span>', "o")
         : tile("РЦ", fmt(k.lager), "")) +
-      tile("остаток маг", fmt(k.laden), (k.laden !== null && k.laden <= 0) ? "r" : "") +
+      tile("остаток маг", fmt(k.laden), "ez" + ((k.laden !== null && k.laden <= 0) ? " r" : "")) +
       tile("MHD", restl === null || restl === undefined ? "—" : restl + "д", (restl !== null && restl !== undefined && restl < DATA.mhd_rot) ? "r" : "") +
       tile("посл. чек", (k.last_check || "—").slice(0, 5), chekCls) +
       tile("дней назад", tg === null ? "—" : tg, chekCls) +
     '</div>' +
-    '<div class="verdzeile" style="background:#' + k.vfill + ';color:#' + k.vfont + '">' + esc(k.vtext) + '</div>' +
     '</div></div>';
 
   html += kreisBlock(k) + block2(k) + histogramm(k) + wgZeile;
