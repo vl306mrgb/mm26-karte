@@ -53,6 +53,40 @@
   table.grid td.summe { border: 0; font-size: 11px; color: #8a8a8a; padding: 1px 2px 3px; font-weight: 400; }
   table.grid td.lbl.s { writing-mode: horizontal-tb; transform: none; font-size: 9px; }
   .ez .lb { white-space: nowrap; font-size: 9.5px; letter-spacing: -0.3px; }
+  /* --- карточка v20: шапка с фото, блок продаж по дням, блок заказов; справа узкая колонка --- */
+  .kopf { display: grid; grid-template-columns: 30% 1fr; border-bottom: 0; }
+  .kopf .foto { border-right: 1px solid var(--thin); min-height: 150px; }
+  .kgr { display: grid; grid-template-columns: repeat(4, 1fr); }
+  .kgr > div { border-left: 0; border-right: 1px solid var(--thin); border-bottom: 1px solid var(--thin);
+    padding: 3px 2px 4px; text-align: center; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .kgr > div:nth-child(4n) { border-right: 0; }
+  .kgr > div:nth-last-child(-n+4) { border-bottom: 0; }
+  .kgr .art { font-weight: 800; font-size: 22px; grid-column: span 1; padding-left: 4px; text-align: left; }
+  .kgr .abc { background: var(--grau); font-weight: 700; font-size: 17px; }
+  .kgr .logi { font-size: 13px; line-height: 1.1; overflow-wrap: anywhere; }
+  .kgr .lc { font-weight: 800; font-size: 17px; }
+  .kgr .v { font-size: 14px; }
+  .blk { display: flex; align-items: stretch; gap: 6px; margin: 10px 0; }
+  .blk > .links { flex: 1; min-width: 0; background: var(--card); border: 2.5px solid var(--line); border-radius: 6px; overflow: hidden; }
+  .blk > .rsp { width: 64px; display: flex; flex-direction: column; gap: 4px; }
+  .rsp > div { flex: 1; background: var(--card); border: 1px solid var(--thin); border-radius: 5px; text-align: center;
+    padding: 2px 1px; display: flex; flex-direction: column; justify-content: center; min-height: 0; }
+  .rsp .lb { font-size: 9.5px; white-space: nowrap; letter-spacing: -0.2px; }
+  .rsp .v { font-size: 15px; }
+  .rsp .kr2m { display: flex; justify-content: center; gap: 2px; margin-top: 2px; }
+  table.tage { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  table.tage th { font-size: 11px; color: var(--muted); font-weight: 600; padding: 2px 0; }
+  table.tage td { border: 1px solid var(--thin); text-align: center; padding: 2px 0 1px; height: 46px; vertical-align: middle;
+    font-size: 16px; font-weight: 600; position: relative; }
+  table.tage td.kw { border: 0; font-size: 11px; color: var(--muted); width: 30px; font-weight: 600; line-height: 1.15; }
+  table.tage td.kw i { display: block; font-style: normal; font-weight: 400; font-size: 10px; color: #8a8a8a; }
+  table.tage td.null { color: #9a9a9a; font-weight: 400; }
+  table.tage .zt { display: block; font-size: 9.5px; line-height: 1; color: #8a8a8a; font-weight: 400; margin-top: 2px; }
+  table.tage .zt.spaet { color: #8a8a8a; } table.tage .zt.frueh { color: #d00000; font-weight: 700; }
+  .legende { font-size: 10px; color: var(--muted); padding: 3px 4px 4px; white-space: nowrap; overflow: hidden; }
+  .legende span { display: inline-flex; align-items: center; gap: 2px; margin-right: 6px; }
+  .shkbtn { width: 100%; margin: 14px 0 6px; }
+  .shkitem { background: #fff; border: 1px solid var(--thin); border-radius: 6px; padding: 10px 6px 4px; margin: 8px 0; text-align: center; }
   .verdzeile { padding: 5px 8px; font-weight: 800; font-size: 15px; text-align: center; border-top: 1px solid var(--thin); }
   .mitte { display: grid; grid-template-columns: 32% 15% 1fr; border-bottom: 1px solid var(--thin); }
   .kspalte { display: flex; flex-direction: column; justify-content: flex-end; gap: 6px; padding: 4px 4px 8px;
@@ -425,22 +459,49 @@ function kreis(seg) {
   });
   return svg + '<circle cx="17" cy="17" r="15" fill="none" stroke="#C8C8C8" stroke-width="0.6"></circle></svg>';
 }
-function kreisBlock(k) {
+function kreisBlock(k, rechts) {
   const kr = k.kreise;
   if (!kr) return "";
   const tage = ["пн", "вт", "ср", "чт", "пт", "сб"];
-  let h = '<div class="hist"><table class="kreise"><tr><th></th>' + tage.map(t => '<th>' + t + '</th>').join("") + '</tr>';
+  let h = '<table class="kreise"><tr><th></th>' + tage.map(t => '<th>' + t + '</th>').join("") + '</tr>';
   (kr.length === 3 ? ["W-2", "W-1", "W0"] : ["W-1", "W0"]).forEach((w, j) => {
     h += '<tr><td class="kw">' + w + '</td>' + (kr[j] || []).map(seg => '<td' + (seg && seg[3] ? ' class="lief"' : '') + '>' +
     (seg && seg[3] && seg[6] ? '<span class="lq">' + fmt(seg[6]) + '</span>' : '') + (seg ? kreis(seg) : '') + '</td>').join("") + '</tr>';
   });
-  h += '</table><div class="ht" style="padding:4px 4px 4px">' +
-    [["в корзине (терминал)", 0], ["заказан", 1], ["на РЦ 8–10 ч", 2]].map(x =>
-      '<span style="display:inline-flex;align-items:center;gap:3px;margin-right:9px"><span style="width:10px;height:10px;border-radius:5px;background:' +
-      KREIS_FARBE[x[1]] + '"></span>' + x[0] + '</span>').join("") +
-    '<span style="display:inline-flex;align-items:center;gap:3px"><span style="width:12px;height:10px;background:#FFF59D;box-shadow:inset 0 0 0 2px #FFE600"></span>поставка</span>' +
-    '</div></div>';
-  return h;
+  h += '</table><div class="legende">' +
+    [["в корзине", 0], ["заказан", 1], ["на РЦ 8–10 ч", 2]].map(x =>
+      '<span><span style="width:8px;height:8px;border-radius:4px;background:' + KREIS_FARBE[x[1]] + '"></span>' + x[0] + '</span>').join("") +
+    '<span><span style="width:10px;height:8px;background:#FFF59D;box-shadow:inset 0 0 0 2px #FFE600"></span>поставка (уп)</span></div>';
+  return '<div class="blk"><div class="links">' + h + '</div><div class="rsp">' + rechts + '</div></div>';
+}
+
+function verkaufBlock(k, rechts) {
+  // продажи по дням: строки W-2/W-1/W0, колонки пн..сб (как блок заказов)
+  const tage = ["пн", "вт", "ср", "чт", "пт", "сб"];
+  const kart = k.kart || 0, uct = k.uc_tag || [], zeit = k.zeit || [];
+  const heute = new Date(), jetztH = heute.getHours();
+  let h = '<table class="tage"><tr><th style="width:30px"></th>' + tage.map(t => '<th>' + t + '</th>').join("") + '</tr>';
+  ["W-2", "W-1", "W0"].forEach((w, j) => {
+    const t4 = (k.tage4 || [])[j] || [null, null, null, null], r = k.raster[j] || [];
+    const werte = [t4[0], t4[1], t4[2], t4[3], r[1], r[2]];
+    const da = werte.filter(x => x !== null && x !== undefined);
+    const summe = kart && da.length ? fmt(Math.round(10 * da.reduce((p, x) => p + x, 0) / kart) / 10) : "";
+    const promo = (k.promo_w || [])[j];
+    h += '<tr><td class="kw">' + w + (summe ? '<i>' + summe + ' уп</i>' : '') + '</td>';
+    werte.forEach((v, d) => {
+      if (v === null || v === undefined) { h += '<td' + (promo ? ' class="promo"' : '') + '></td>'; return; }
+      const z = (zeit[j] || [])[d];
+      // время последнего чека за день; раньше 16:00 - красным (для сегодняшнего дня - только после 16:00)
+      const heuteTag = j === 2 && d === ((heute.getDay() + 6) % 7);
+      const frueh = z && +z.slice(0, 2) < 16 && !(heuteTag && jetztH < 16);
+      h += '<td class="' + (v === 0 ? "null " : "") + (promo ? "promo" : "") + '">' + zahl(v, (uct[j] || [])[d], kart, 28) +
+        (z && v ? '<span class="zt ' + (frueh ? "frueh" : "spaet") + '">' + z + '</span>' : '') + '</td>';
+    });
+    h += '</tr>';
+  });
+  h += '</table><div class="legende"><span>продажи шт/день</span><span><span class="uz" style="width:10px;height:10px">' + ucKreis(0.5, 10) +
+    '</span>доля уценки</span><span><u>подч.</u> ≥ ½ уп</span><span style="color:#d00000">чек до 16 ч</span></div>';
+  return '<div class="blk"><div class="links">' + h + '</div><div class="rsp">' + rechts + '</div></div>';
 }
 
 const MON = ["янв", "фев", "мар", "апр", "май", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"];
@@ -512,42 +573,6 @@ function zeige(a) {
   if (!k.in_kat) { $("out").innerHTML = '<div class="msg err">' + esc(k.art) + ': нет в каталоге.</div>'; return; }
   const lc = k.lc && k.lc !== "0" ? k.lc : "";
   const fotoHtml = k.foto ? '<img alt="" src="data:image/jpeg;base64,' + k.foto + '">' : '<div class="nm">' + esc(k.name_de || k.name) + '</div>';
-  const tage = ["пн-чт", "пт", "сб"];
-  const kart = k.kart || 0, uct = k.uc_tag || [];
-  let grid = '<table class="grid"><tr><th style="width:14px"></th><th>W-2</th><th>W-1</th><th>W0</th></tr>';
-  for (let i = 0; i < 3; i++) {
-    grid += '<tr><td class="lbl">' + tage[i] + '</td>';
-    for (let j = 0; j < 3; j++) {
-      const v = (k.raster[j] || [])[i];
-      const t4 = (k.tage4 || [])[j];
-      if (i === 0 && t4) {                 // пн-чт лесенкой: пн, вт, ср, чт - каждый на строку ниже и колонку правее
-        let tr = '<div class="treppe">';
-        for (let d = 0; d < 4; d++) {
-          for (let c = 0; c < 4; c++) {
-            const x = (c === d) ? t4[d] : undefined;
-            tr += (x === undefined || x === null) ? '<span></span>'
-              : '<span class="' + (x === 0 ? "null" : "") + '">' + zahl(x, (uct[j] || [])[d], kart, 12) + '</span>';
-          }
-        }
-        grid += '<td class="tr ' + ((k.promo_w || [])[j] ? "promo" : "") + '">' + tr + '</div></td>';
-        continue;
-      }
-      const tagWert = (i > 0 || !t4) ? v : null;
-      grid += '<td class="' + ((k.promo_w || [])[j] ? "promo" : "") + '">' +
-        (i > 0 ? zahl(tagWert, (uct[j] || [])[i + 3], kart, 30) : (v === null || v === undefined ? "" : fmt(v))) + '</td>';
-    }
-    grid += '</tr>';
-  }
-  if (kart) {                // сумма недели в упаковках: (пн..чт + пт + сб) / в коробке
-    grid += '<tr><td class="lbl s">уп</td>';
-    for (let j = 0; j < 3; j++) {
-      const t4 = (k.tage4 || [])[j] || [], r = k.raster[j] || [];
-      const w = [...t4, r[1], r[2]].filter(x => x !== null && x !== undefined);
-      grid += '<td class="summe">' + (w.length ? fmt(Math.round(10 * w.reduce((p, x) => p + x, 0) / kart) / 10) : "") + '</td>';
-    }
-    grid += '</tr>';
-  }
-  grid += '</table>';
   const sl = k.sl, restl = k.restl;
   const tg = tageSeit(k.last_check);
   const chekCls = tg === null ? "" : (tg > 3 ? "rotf" : (tg >= 1 ? "gelbf" : ""));
@@ -560,40 +585,37 @@ function zeige(a) {
     : ((k.kassa_kak && k.kassa_kak.length) ? '<div class="mapz">на кассе как: ' + esc(k.kassa_kak.join(", ")) + '</div>' : '');
   let html = '<div class="titel">' + esc(k.name_de || k.name) + ' <span class="inh">' + esc(k.inhalt || "") + '</span></div>' + mapz +
     '<div class="mhdzeile"></div>' +
-    '<div class="karte">' +
-    '<div class="k1"><div class="art">' + esc(k.art) + '</div>' +
-    '<div class="kr2"><span class="kk">' + (k.rek ? rundKreis("#70AD47", fmt(k.rek), "#fff", 34) : rundKreis("#C0504D", "—", "#fff", 34)) +
-      '<i>заказ уп</i></span><span class="kk">' + (k.w1 ? rundKreis("#FF5050", (String(k.w1).match(/\d+/) || [""])[0] +
-      (/↻/.test(k.w1) ? "↻" : ""), "#fff", 34) : rundKreis("#E4E4E4", "—", "#9a9a9a", 34)) + '<i>промо W+1</i></span></div>' +
-    '<div class="abc">' + esc(k.abc || "") + '</div>' +
-    '<div class="logi ' + (k.ost ? "" : "o") + '">' + esc(k.logi) + '</div><div class="lc ' + (lc ? "r" : "") + '">' + esc(lc) + '</div></div>' +
-    '<div class="mitte"><div class="foto">' + fotoHtml + '</div>' +
-      '<div class="kspalte"><div>KWk<b>' + fmt(k.kpr) + '</b></div><div>FSk<b>' + fmt(k.kps) + '</b></div></div>' +
-      '<div>' + grid + '</div></div>' +
-    '<div class="tiles">' +
-      tile("сезон", (k.sez || "").replace(" прерыв.", " прер"), "g") +
+    '<div class="karte"><div class="kopf"><div class="foto">' + fotoHtml + '</div><div class="kgr">' +
+      '<div class="art"' + (String(k.art).length > 5 ? ' style="font-size:' + (String(k.art).length > 7 ? 13 : 16) + 'px"' : '') + '>' + esc(k.art) + '</div><div class="abc">' + esc(k.abc || "") + '</div>' +
+      '<div class="logi ' + (k.ost ? "" : "o") + '">' + esc(k.logi) + '</div><div class="lc ' + (lc ? "r" : "") + '">' + esc(lc) + '</div>' +
       tile("в пути", fut, fut ? "o" : "") +
       (k.sklad ? tileH("склад", '<span class="v">' + fmt(k.sklad) + '</span><span class="klz">' + esc(k.sklad_d || "") + '</span>',
         k.sklad_alt ? "g" : "o") : tile("склад", "", "")) +
       tile("Vorbest.", vorb, vorb ? (k.vorb_zu ? "schwarz" : "o") : "") +
       tile("уценка", k.uc ? fmt(k.uc) : "—", k.uc ? "o" : "") +
       tile("в коробке", k.im_karton || "—", "") +
-    '</div>' +
-    '<div class="unten">' +
-      '<div class="slbox">' + [["SL·РЦ", k.sl_rz], ["SL·маг", sl]].map(x => '<span class="slz' +
-        ((x[1] !== null && x[1] !== undefined && x[1] < DATA.sl_rot) ? ' rot' : '') + '"><i>' + x[0] + '</i> ' +
-        (x[1] === null || x[1] === undefined ? "—" : x[1] + "%") + '</span>').join("") + '</div>' +
-      ((k.lager !== null && k.lager <= 0)
-        ? tileH("РЦ", '<span class="v">0</span><span class="klz">&gt;' + 10 + ': ' + esc(k.rz10 || "давно") + '</span>', "o")
-        : tile("РЦ", fmt(k.lager), "")) +
-      tile("остаток маг", fmt(k.laden), "ez" + ((k.laden !== null && k.laden <= 0) ? " r" : "")) +
-      tile("MHD", restl === null || restl === undefined ? "—" : restl + "д", (restl !== null && restl !== undefined && restl < DATA.mhd_rot) ? "r" : "") +
-      tile("посл. чек", (k.last_check || "—").slice(0, 5), chekCls) +
-      tile("дней назад", tg === null ? "—" : tg, chekCls) +
-    '</div>' +
-    '</div></div>';
+      tile("KWk", fmt(k.kpr), "") + tile("FSk", fmt(k.kps), "") +
+      tile("сезон", (k.sez || "").replace(" прерыв.", " прер"), "g") +
+    '</div></div></div>';
+  const kreiseKlein = (k.rek ? rundKreis("#70AD47", fmt(k.rek), "#fff", 28) : rundKreis("#C0504D", "—", "#fff", 28)) +
+    (k.w1 ? rundKreis("#FF5050", (String(k.w1).match(/\d+/) || [""])[0] + (/↻/.test(k.w1) ? "↻" : ""), "#fff", 28)
+          : rundKreis("#E4E4E4", "—", "#9a9a9a", 28));
+  const rechts1 =
+    tile("посл. чек", (k.last_check || "—").slice(0, 5), chekCls) +
+    tile("дней назад", tg === null ? "—" : tg, chekCls) +
+    tileH("MHD", '<span class="v">' + (restl === null || restl === undefined ? "—" : restl + "д") + '</span>' +
+      '<span class="kr2m" title="заказ уп · промо W+1">' + kreiseKlein + '</span>',
+      (restl !== null && restl !== undefined && restl < DATA.mhd_rot) ? "r" : "");
+  const rechts2 =
+    '<div class="slbox">' + [["SL·РЦ", k.sl_rz], ["SL·маг", sl]].map(x => '<span class="slz' +
+      ((x[1] !== null && x[1] !== undefined && x[1] < DATA.sl_rot) ? ' rot' : '') + '"><i>' + x[0] + '</i> ' +
+      (x[1] === null || x[1] === undefined ? "—" : x[1] + "%") + '</span>').join("") + '</div>' +
+    ((k.lager !== null && k.lager <= 0)
+      ? tileH("РЦ", '<span class="v">0</span><span class="klz">&gt;10: ' + esc(k.rz10 || "давно") + '</span>', "o")
+      : tile("РЦ", fmt(k.lager), "")) +
+    tile("остаток маг", fmt(k.laden), (k.laden !== null && k.laden <= 0) ? "r" : "");
 
-  html += kreisBlock(k) + block2(k) + histogramm(k) + wgZeile;
+  html += verkaufBlock(k, rechts1) + kreisBlock(k, rechts2) + block2(k) + histogramm(k) + wgZeile;
 
   if (!(k.orte || []).length) {
     html += '<h3>Вне планограммы' + (k.wg ? ' · ' + esc(k.wg) : '') + '</h3>';
@@ -606,8 +628,10 @@ function zeige(a) {
         ? '<a href="#' + x + '" data-a="' + x + '" class="' + (x === a && i + 1 === o[3] ? "akt" : "") + '">' + (i + 1) + '. ' + esc(x) + '</a>'
         : '<a class="leer">' + (i + 1) + '. резерв</a>').join("") + '</div>';
   }
+  html += '<button class="sec shkbtn" id="shkbtn">▌▍▌ Сформировать штрихкод</button><div id="shkbox"></div>';
   $("out").innerHTML = html;
   bindLinks();
+  $("shkbtn").onclick = () => zeigeShk(a);
   window.scrollTo({ top: 0, behavior: "smooth" });
   zeigeMhdZeile(a);
   if (!k.foto) holeFoto(a).then(b => {
@@ -856,6 +880,83 @@ function einstellungen() {
   if (s === null) return;
   lsSet("mm26mhd_url", u.trim()); lsSet("mm26mhd_key", s.trim());
   mhdSync().then(ok => alert(ok ? "Подключено ✔" : "Не удалось подключиться — проверьте адрес и ключ"));
+}
+
+// ---------- штрихкод (EAN-13 / EAN-8 / Code128) для сканера кассы ----------
+const C128 = "212222,222122,222221,121223,121322,131222,122213,122312,132212,221213,221312,231212,112232,122132,122231,113222,123122,123221,223211,221132,221231,213212,223112,312131,311222,321122,321221,312212,322112,322211,212123,212321,232121,111323,131123,131321,112313,132113,132311,211313,231113,231311,112133,112331,132131,113123,113321,133121,313121,211331,231131,213113,213311,213131,311123,311321,331121,312113,312311,332111,314111,221411,431111,111224,111422,121124,121421,141122,141221,112214,112412,122114,122411,142112,142211,241211,221114,413111,241112,134111,111242,121142,121241,114212,124112,124211,411212,421112,421211,212141,214121,412121,111143,111341,131141,114113,114311,411113,411311,113141,114131,311141,411131,211412,211214,211232,2331112".split(",");
+const EAN_L = ["0001101","0011001","0010011","0111101","0100011","0110001","0101111","0111011","0110111","0001011"];
+const EAN_G = ["0100111","0110011","0011011","0100001","0011101","0111001","0000101","0010001","0001001","0010111"];
+const EAN_R = ["1110010","1100110","1101100","1000010","1011100","1001110","1010000","1000100","1001000","1110100"];
+const EAN_P = ["LLLLLL","LLGLGG","LLGGLG","LLGGGL","LGLLGG","LGGLLG","LGGGLL","LGLGLG","LGLGGL","LGGLGL"];
+function eanPruef(s) {             // контрольная цифра для строки без неё
+  let sum = 0;
+  for (let i = 0; i < s.length; i++) sum += (+s[s.length - 1 - i]) * (i % 2 === 0 ? 3 : 1);
+  return String((10 - sum % 10) % 10);
+}
+function eanBits(code) {           // '0'/'1' модули или null
+  if (/^\d{12}$/.test(code)) code = "0" + code;                    // UPC-A -> EAN-13
+  if (/^\d{13}$/.test(code)) {
+    let b = "101";
+    for (let i = 1; i < 7; i++) b += (EAN_P[+code[0]][i - 1] === "L" ? EAN_L : EAN_G)[+code[i]];
+    b += "01010";
+    for (let i = 7; i < 13; i++) b += EAN_R[+code[i]];
+    return b + "101";
+  }
+  if (/^\d{8}$/.test(code)) {
+    let b = "101";
+    for (let i = 0; i < 4; i++) b += EAN_L[+code[i]];
+    b += "01010";
+    for (let i = 4; i < 8; i++) b += EAN_R[+code[i]];
+    return b + "101";
+  }
+  return null;
+}
+function c128Bits(text) {          // Code128 B (печатные ASCII 32..126)
+  const vals = [104];
+  for (const ch of text) { const v = ch.charCodeAt(0) - 32; if (v < 0 || v > 94) return null; vals.push(v); }
+  let sum = 104;
+  for (let i = 1; i < vals.length; i++) sum += vals[i] * i;
+  vals.push(sum % 103, 106);
+  let b = "";
+  for (const v of vals) { const w = C128[v]; for (let i = 0; i < w.length; i++) b += (i % 2 === 0 ? "1" : "0").repeat(+w[i]); }
+  return b;
+}
+function shkSvg(code) {
+  const ean = eanBits(code), bits = ean || c128Bits(code);
+  if (!bits) return "";
+  const q = 12, m = 3, h = 120, W = (bits.length + 2 * q) * m;
+  let svg = '<svg viewBox="0 0 ' + W + ' ' + (h + 30) + '" width="100%" style="max-width:' + W + 'px;background:#fff" shape-rendering="crispEdges">';
+  let x = q * m, i = 0;
+  while (i < bits.length) {
+    let j = i; while (j < bits.length && bits[j] === bits[i]) j++;
+    if (bits[i] === "1") svg += '<rect x="' + (x + i * m) + '" y="6" width="' + ((j - i) * m) + '" height="' + h + '" fill="#000"/>';
+    i = j;
+  }
+  svg += '<text x="' + (W / 2) + '" y="' + (h + 26) + '" font-size="22" text-anchor="middle" font-family="monospace" fill="#000">' + esc(code) + '</text>';
+  return svg + '</svg>';
+}
+let EAN_VON = null;
+function eansVon(a) {
+  if (!EAN_VON) {
+    EAN_VON = {};
+    for (const [e, arts] of Object.entries(DATA.ean || {})) for (const x of arts) (EAN_VON[x] = EAN_VON[x] || []).push(e);
+  }
+  return (EAN_VON[a] || []).slice().sort((x, y) => y.length - x.length);
+}
+function zeigeShk(a) {
+  const box = $("shkbox"), k = DATA.items[a];
+  if (box.innerHTML) { box.innerHTML = ""; return; }
+  const eans = eansVon(a);
+  let h = '<div class="shkwahl">';
+  if (eans.length) {
+    h += eans.map(e => '<div class="shkitem">' + shkSvg(e) + '<div class="klein">EAN ' + (eanBits(e) && /^\d{8,13}$/.test(e) &&
+      eanPruef(e.slice(0, -1)) !== e.slice(-1) ? '· <b style="color:#c00">контрольная цифра не сходится</b>' : '') + '</div></div>').join("");
+  } else {
+    h += '<div class="msg">В каталоге teleNorma для ' + esc(k.art) + ' нет EAN. Ниже штрихкод артикула (Code128) — касса примет его, только если ищет по номеру артикула.</div>' +
+      '<div class="shkitem">' + shkSvg(String(k.art)) + '</div>';
+  }
+  box.innerHTML = h + '<div class="klein">Яркость экрана — на максимум, держите телефон ровно перед сканером.</div></div>';
+  box.scrollIntoView({ behavior: "smooth", block: "center" });
 }
 
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
