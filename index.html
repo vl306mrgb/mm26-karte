@@ -55,7 +55,13 @@
   .ez .lb { white-space: nowrap; font-size: 9.5px; letter-spacing: -0.3px; }
   /* --- карточка v20: шапка с фото, блок продаж по дням, блок заказов; справа узкая колонка --- */
   .kopf { display: grid; grid-template-columns: 30% 1fr; border-bottom: 0; }
-  .kopf .foto { border-right: 1px solid var(--thin); min-height: 150px; }
+  .kopf .fotozelle { position: relative; border-right: 1px solid var(--thin); }
+  .kopf .foto { border-right: 0; min-height: 150px; height: 100%; }
+  .preis { position: absolute; right: 3px; top: 3px; background: rgba(255,255,255,.92); border: 1px solid var(--thin);
+    border-radius: 4px; padding: 1px 4px 2px; text-align: right; line-height: 1.1; }
+  .preis span { display: block; font-size: 10px; color: var(--muted); }
+  .preis b { display: block; font-size: 15px; color: #555; }
+  .preis.r { background: var(--rot); border-color: var(--rot); } .preis.r span, .preis.r b { color: #fff; }
   .kgr { display: grid; grid-template-columns: repeat(4, 1fr); }
   .kgr > div { border-left: 0; border-right: 1px solid var(--thin); border-bottom: 1px solid var(--thin);
     padding: 3px 2px 4px; text-align: center; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
@@ -590,7 +596,9 @@ function zeige(a) {
     : ((k.kassa_kak && k.kassa_kak.length) ? '<div class="mapz">на кассе как: ' + esc(k.kassa_kak.join(", ")) + '</div>' : '');
   let html = '<div class="titel">' + esc(k.name_de || k.name) + ' <span class="inh">' + esc(k.inhalt || "") + '</span></div>' + mapz +
     '<div class="mhdreihe"><div class="mhdzeile"></div><div class="krtop">@@KREISE@@</div></div>' +
-    '<div class="karte"><div class="kopf"><div class="foto">' + fotoHtml + '</div><div class="kgr">' +
+    '<div class="karte"><div class="kopf"><div class="fotozelle"><div class="foto">' + fotoHtml + '</div>' +
+      (k.preis ? '<div class="preis' + (k.abc === "A" ? ' r' : '') + '"><span>цена</span><b>' + fmt(k.preis.toFixed(2)) + ' €</b></div>' : '') +
+    '</div><div class="kgr">' +
       '<div class="art"' + (String(k.art).length > 5 ? ' style="font-size:' + (String(k.art).length > 7 ? 13 : 16) + 'px"' : '') + '>' + esc(k.art) + '</div><div class="abc">' + esc(k.abc || "") + '</div>' +
       '<div class="logi ' + (k.ost ? "" : "o") + '">' + esc(k.logi) + '</div><div class="lc ' + (lc ? "r" : "") + '">' + esc(lc) + '</div>' +
       tile("в пути", fut, fut ? "o" : "") +
