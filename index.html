@@ -468,6 +468,7 @@ function kreis(seg) {
     svg += '<text x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" dy="0.35em" text-anchor="middle" font-size="' +
       (t.length > 2 ? 7 : 9.5) + '" font-weight="800" fill="#fff">' + t + '</text>';
   });
+  if (seg[7]) svg += '<circle cx="17" cy="25.5" r="2.6" fill="#000"><title>РЦ: снимка 8–10 не было, взято окно 7–12</title></circle>';
   return svg + '<circle cx="17" cy="17" r="15" fill="none" stroke="#C8C8C8" stroke-width="0.6"></circle></svg>';
 }
 function kreisBlock(k, rechts) {
@@ -480,9 +481,9 @@ function kreisBlock(k, rechts) {
     (seg && seg[3] && seg[6] ? '<span class="lq">' + fmt(seg[6]) + '</span>' : '') + (seg ? kreis(seg) : '') + '</td>').join("") + '</tr>';
   });
   h += '</table><div class="legende">' +
-    [["в корзине", 0], ["заказан", 1], ["на РЦ 8–10 ч", 2]].map(x =>
+    [["в корзине", 0], ["заказан", 1], ["РЦ 8–10 (•7–12)", 2]].map(x =>
       '<span><span style="width:8px;height:8px;border-radius:4px;background:' + KREIS_FARBE[x[1]] + '"></span>' + x[0] + '</span>').join("") +
-    '<span><span style="width:10px;height:8px;background:#FFF59D;box-shadow:inset 0 0 0 2px #FFE600"></span>поставка (уп)</span></div>';
+    '<span><span style="width:10px;height:8px;background:#FFF59D;box-shadow:inset 0 0 0 2px #FFE600"></span>поставка</span></div>';
   return '<div class="blk"><div class="links">' + h + '</div><div class="rsp">' + rechts + '</div></div>';
 }
 
