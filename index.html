@@ -130,6 +130,30 @@
   table.kreise .lq { position: absolute; right: 2px; top: 1px; font-size: 10px; line-height: 1; color: #7a7a7a; font-weight: 700; }
   table.kreise td.lief { background: #FFF59D; box-shadow: inset 0 0 0 3px #FFE600; }
   table.kreise td.kw { border: 0; font-size: 12px; color: var(--muted); width: 30px; }
+  .tabs { display: flex; background: rgba(255,255,255,.15); border-radius: 8px; padding: 3px; }
+  .tabs button { background: none; color: #fff; font-size: 14px; padding: 6px 8px; border-radius: 6px; font-weight: 700; }
+  .tabs button.on { background: #fff; color: var(--top); }
+  .periode { font-size: 12px; color: var(--muted); margin: 2px 2px 8px; } .periode b { color: #111; }
+  .dgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .kpi { background: var(--card); border: 2px solid var(--line); border-radius: 6px; padding: 6px 7px; min-width: 0; }
+  .kpi h4 { margin: 0 0 4px; font-size: 13px; text-align: center; }
+  .kpi .zw { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+  .kpi .zw div { text-align: center; min-width: 0; }
+  .kpi .zw i { display: block; font-style: normal; font-size: 10px; color: var(--muted); }
+  .kpi .zw b { display: block; font-size: 18px; line-height: 1.1; }
+  .kpi .zw b small { font-size: 11px; font-weight: 600; color: #444; }
+  .kpi .zw em { display: block; font-style: normal; font-size: 10.5px; font-weight: 700; margin-top: 1px; }
+  .kpi .vgl { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 5px; border-top: 1px solid #e3e3e3; padding-top: 4px; }
+  .kpi .vgl div { text-align: center; font-size: 15px; font-weight: 800; }
+  .kpi .vgl i { display: block; font-style: normal; font-size: 9.5px; font-weight: 400; color: var(--muted); }
+  .kpi .up { color: #2E7D32; } .kpi .dn { color: #C62828; } .kpi .na { color: #9a9a9a; font-weight: 400; }
+  .kpi.breit { grid-column: span 2; }
+  .kpi.sl table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .kpi.sl th { font-size: 9.5px; color: var(--muted); font-weight: 400; padding: 1px 2px; }
+  .kpi.sl td { text-align: center; padding: 2px; border-top: 1px solid #eee; font-weight: 700; }
+  .kpi.sl td.k { font-weight: 800; width: 22px; }
+  .kpi svg.mini, .kpi svg.gross { width: 100%; display: block; margin-top: 5px; }
+  .kpi .note { font-size: 10.5px; color: var(--muted); margin-top: 3px; text-align: center; }
   .hbtn { background: rgba(255,255,255,.15); color: #fff; font-size: 14px; padding: 6px 9px; border-radius: 7px; }
   .mhdzeile { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 8px 2px -2px; }
   .mhdbtn { font-size: 14px; padding: 6px 10px; }
@@ -205,7 +229,7 @@
 </head>
 <body>
 <header>
-  <div class="t">MM26 · карточка</div>
+  <div class="tabs"><button id="tabK" class="on">Карточка</button><button id="tabD">Дашборд</button></div>
   <button class="hbtn" id="mhdtab" style="display:none">📅 Сроки</button>
   <button class="hbtn" id="einst" style="display:none">⚙</button>
   <div class="s" id="stand">загрузка…</div>
@@ -320,7 +344,9 @@ function fotosVorladen() {      // скачать все пакеты в пам�
 
 function bereit() {
   $("mhdtab").style.display = ""; $("einst").style.display = "";
-  $("mhdtab").onclick = () => { scanStop && scanAktiv && scanStop(); zeigeMhdListe(); };
+  $("mhdtab").onclick = () => { scanStop && scanAktiv && scanStop(); modus("k"); zeigeMhdListe(); };
+  $("tabD").onclick = zeigeDash;
+  $("tabK").onclick = () => { modus("k"); $("out").innerHTML = ""; history.replaceState(null, "", "#"); $("code").focus(); };
   $("einst").onclick = einstellungen;
   setTimeout(mhdSync, 2500);
   setTimeout(fotosVorladen, 1500);
@@ -335,7 +361,8 @@ function bereit() {
     $("out").innerHTML = '<div class="msg">Сканер в этом браузере не поддерживается — откройте в Chrome на Android. Номер можно ввести вручную.</div>';
   }
   const h = decodeURIComponent(location.hash.slice(1));
-  if (h === "mhd") zeigeMhdListe();
+  if (h === "dash") zeigeDash();
+  else if (h === "mhd") zeigeMhdListe();
   else if (h) suche(h);
 }
 
@@ -578,6 +605,7 @@ function rundKreis(fill, text, farbe, d) {
 }
 
 function zeige(a) {
+  if (DM.an) modus("k");
   const k = DATA.items[a];
   history.replaceState(null, "", "#" + a);
   AKTUELL = a;
@@ -970,6 +998,98 @@ function zeigeShk(a) {
   }
   box.innerHTML = h + '<div class="klein">Яркость экрана — на максимум, держите телефон ровно перед сканером.</div></div>';
   box.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+// ======================= ДАШБОРД =======================
+const DM = { an: false };
+function modus(m) {                       // "k" карточка | "d" дашборд
+  DM.an = m === "d";
+  $("tabK").classList.toggle("on", !DM.an); $("tabD").classList.toggle("on", DM.an);
+  $("suchform").style.display = DM.an ? "none" : "";
+  if ($("scanbtn")) $("scanbtn").style.visibility = DM.an ? "hidden" : "";
+  if (DM.an && typeof scanAktiv !== "undefined" && scanAktiv) scanStop();
+}
+const nbsp = (x) => String(x).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+function eur(v) {
+  if (v === null || v === undefined) return "—";
+  if (Math.abs(v) >= 10000) { const t = v / 1000; return nbsp((Math.abs(t) >= 1000 ? Math.round(t) : t.toFixed(1)).toString()).replace(".", ",") + ' <small>т€</small>'; }
+  return nbsp(Math.round(v)) ;
+}
+const zahl0 = (v) => v === null || v === undefined ? "—" : nbsp(Math.round(v));
+const dez = (v, n) => v === null || v === undefined ? "—" : v.toFixed(n).replace(".", ",");
+function delta(d, txt, inv, pkt) {        // inv: рост = плохо; pkt: процентные пункты
+  if (d === null || d === undefined) return '<div class="na">—<i>' + txt + '</i></div>';
+  const gut = inv ? d < 0 : d > 0, cls = d === 0 ? "" : (gut ? "up" : "dn");
+  return '<div class="' + cls + '">' + (d > 0 ? "▲ +" : (d < 0 ? "▼ −" : "")) + dez(Math.abs(d), Math.abs(d) >= 10 || pkt ? (pkt ? 1 : 0) : 1) +
+    (pkt ? " п." : "%") + '<i>' + txt + '</i></div>';
+}
+function jdelta(d, inv, pkt) {
+  if (d === null || d === undefined) return '<em class="na">— к пр. году</em>';
+  const gut = inv ? d < 0 : d > 0;
+  return '<em class="' + (gut ? "up" : "dn") + '">' + (d > 0 ? "▲ +" : "▼ −") + dez(Math.abs(d), 1) + (pkt ? " п." : "%") + ' к пр. году</em>';
+}
+function dChart(a, b, klein, teiler) {
+  const W = klein ? 170 : 360, H = klein ? 78 : 120, M = DATA.dash.monate;
+  const t = teiler || 1, A = a.map(x => x === null ? null : x / t), B = b.map(x => x === null ? null : x / t);
+  const alle = A.concat(B).filter(x => x !== null);
+  if (!alle.length) return "";
+  const mn = Math.min(...alle), mx = Math.max(...alle), sp = (mx - mn) || mx * 0.1 || 1;
+  const lo = mn - sp * 0.35, hi = mx + sp * 0.08;
+  const bt = klein ? 13 : 18, tp = 6, lx = klein ? 0 : 30, bw = (W - lx) / 13;
+  const y = v => H - bt - (H - bt - tp) * (v - lo) / (hi - lo);
+  let s = '<svg class="' + (klein ? "mini" : "gross") + '" viewBox="0 0 ' + W + ' ' + H + '">';
+  if (!klein) [lo, (lo + hi) / 2, hi].forEach(v => {
+    s += '<line x1="' + lx + '" x2="' + W + '" y1="' + y(v) + '" y2="' + y(v) + '" stroke="#e2e2e2"/>' +
+      '<text x="' + (lx - 3) + '" y="' + (y(v) + 3) + '" font-size="8.5" text-anchor="end" fill="#888">' + nbsp(Math.round(v)) + '</text>';
+  });
+  A.forEach((v, i) => {
+    const x = lx + i * bw + (klein ? 0.6 : 2), w = bw - (klein ? 1.2 : 4);
+    if (B[i] !== null) s += '<rect x="' + x + '" y="' + y(B[i]) + '" width="' + (w / 2) + '" height="' + Math.max(0, H - bt - y(B[i])) + '" fill="#C5CEDF"/>';
+    if (v !== null) s += '<rect x="' + (x + w / 2) + '" y="' + y(v) + '" width="' + (w / 2) + '" height="' + Math.max(0, H - bt - y(v)) + '" fill="' + (i === 12 ? "#7F93B8" : "#1F3864") + '"/>';
+    if (!klein || i % 3 === 0) s += '<text x="' + (x + w / 2) + '" y="' + (H - 3) + '" font-size="' + (klein ? 8 : 9) + '" text-anchor="middle" fill="#666">' + esc(M[i]) + '</text>';
+  });
+  return s + '</svg>';
+}
+function kachel(titel, k, f, opt) {
+  opt = opt || {};
+  return '<div class="kpi' + (opt.breit ? " breit" : "") + '">' + (titel ? '<h4>' + titel + '</h4>' : '') +
+    '<div class="zw"><div><i>' + (opt.lj || "год") + '</i><b>' + f(k.j) + '</b>' + (opt.ohneJ ? '' : jdelta(k.djj, opt.inv, opt.pkt)) + '</div>' +
+    '<div><i>' + (opt.lm || "мес") + '</i><b>' + f(k.m) + '</b></div></div>' +
+    '<div class="vgl">' + delta(k.dm, "к пр. мес", opt.inv, opt.pkt) + delta(k.dj, "к пр. году", opt.inv, opt.pkt) + '</div>' +
+    (opt.note ? '<div class="note">' + opt.note + '</div>' : '') +
+    dChart(k.a, k.b, !opt.breit, opt.teiler) + (opt.breit && opt.cnote ? '<div class="note">' + opt.cnote + '</div>' : '') + '</div>';
+}
+function zeigeDash() {
+  modus("d");
+  AKTUELL = null;
+  history.replaceState(null, "", "#dash");
+  const D = DATA.dash;
+  if (!D) { $("out").innerHTML = '<div class="msg">Дашборд появится после следующего запуска планограммы.</div>'; return; }
+  const K = D.k;
+  let h = '<div class="periode">мес <b>' + esc(D.per_m) + '</b> · год <b>' + esc(D.per_j) + '</b></div><div class="dgrid">';
+  h += kachel("", K.umsatz, eur, { breit: true, teiler: 1000, cnote: "13 месяцев, т€ · тёмное — этот год, светлое — тот же месяц год назад · ось не с нуля" });
+  h += kachel("Трафик, чеков", K.traffic, zahl0);
+  h += kachel("Средний чек, €", K.bon, (v) => dez(v, 2));
+  h += kachel("Доля промо", K.promo, (v) => v === null || v === undefined ? "—" : dez(v, 1) + "%", { inv: true, pkt: true });
+  h += kachel("MHD Rabatt, €", K.mhd, eur, { inv: true, note: K.mhd.anteil_m !== null && K.mhd.anteil_m !== undefined ? dez(K.mhd.anteil_m, 2) + "% оборота месяца" : "" });
+  h += kachel("Заказы, €", K.best, eur);
+  h += kachel("Поставки, €", K.lief, eur, { note: K.lief.quote_m ? K.lief.quote_m + "% от заказанного" : "" });
+  const sl = D.sl || {};
+  h += '<div class="kpi breit sl"><h4>SL полки по ABC</h4><table><tr><th></th><th>год</th><th>мес</th><th>к пр. мес</th><th>к пр. году</th></tr>' +
+    ["A", "B", "C"].map(c => { const x = sl[c] || {};
+      const pr = (v) => v === null || v === undefined ? "—" : dez(v, 1) + "%";
+      const d = x.dm === null || x.dm === undefined ? '<td class="na">—</td>'
+        : '<td class="' + (x.dm >= 0 ? "up" : "dn") + '">' + (x.dm >= 0 ? "▲ +" : "▼ −") + dez(Math.abs(x.dm), 1) + ' п.</td>';
+      return '<tr><td class="k">' + c + '</td><td>' + pr(x.j) + '</td><td>' + pr(x.m) + '</td>' + d + '<td class="na">—</td></tr>'; }).join("") +
+    '</table><div class="note">доля снимков с остатком на полке &gt; 0 · история с 07.2026</div></div>';
+  const st = K.std, es = K.eur_std;
+  h += '<div class="kpi breit"><h4>FTE</h4>' +
+    '<div class="zw"><div><i>год, ср. FTE</i><b>' + dez(K.fte.j, 1) + '</b>' + jdelta(K.fte.djj, true) + '</div><div><i>мес, часов</i><b>' + zahl0(st.m) + ' <small>ч</small></b></div></div>' +
+    '<div class="vgl">' + delta(st.dm, "часов к пр. мес", true) + delta(es.dm, "оборот на час к пр. мес: " + zahl0(es.m) + " €/ч") + '</div>' +
+    dChart(st.a, st.b, false) + '<div class="note">часов в месяц по плану</div></div>';
+  h += '</div><div class="klein" style="text-align:center;margin-top:8px">посчитано ' + esc(D.stand) + '</div>';
+  $("out").innerHTML = h;
+  window.scrollTo({ top: 0 });
 }
 
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
