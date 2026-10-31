@@ -60,7 +60,10 @@
   .preis { position: absolute; right: 3px; top: 3px; background: rgba(255,255,255,.92); border: 1px solid var(--thin);
     border-radius: 4px; padding: 1px 4px; text-align: right; line-height: 1.1; }
   .preis span { display: block; font-size: 10px; color: var(--muted); }
-  .preis b { display: block; font-size: 15px; color: #555; }
+  .preis b { display: inline; font-size: 13px; color: #555; }
+  .preis s { font-size: 13px; color: #999; margin-right: 4px; }
+  .kgr .abc.abcA { background: var(--rot); color: #fff; }
+  .krtop .kk .w1p { font-size: 9px; font-weight: 700; color: #C62828; margin-top: 0; }
   .preis .pwarn { display: inline; font-size: inherit; color: #d00000; font-weight: 900; }
   .preis.r .pwarn { color: #fff; }
   .preis.r { background: var(--rot); border-color: var(--rot); } .preis.r span, .preis.r b { color: #fff; }
@@ -630,11 +633,12 @@ function zeige(a) {
   let html = '<div class="titel">' + esc(k.name_de || k.name) + ' <span class="inh">' + esc(k.inhalt || "") + '</span></div>' + mapz +
     '<div class="mhdreihe"><div class="mhdzeile"></div><div class="krtop">@@KREISE@@</div></div>' +
     '<div class="karte"><div class="kopf"><div class="fotozelle"><div class="foto">' + fotoHtml + '</div>' +
-      (k.preis ? '<div class="preis' + (k.abc === "A" ? ' r' : '') + '"' +
-        (k.preis_kat ? ' title="в каталоге Monolith: ' + fmt(k.preis_kat.toFixed(2)) + ' €"' : '') + '><b>' +
+      (k.preis ? '<div class="preis"' +
+        (k.preis_kat ? ' title="в каталоге Monolith: ' + fmt(k.preis_kat.toFixed(2)) + ' €"' : '') + '>' +
+        (k.preis_alt ? '<s>' + fmt(k.preis_alt.toFixed(2)) + ' €</s>' : '') + '<b>' +
         (k.preis_kat ? '<span class="pwarn">!</span> ' : '') + fmt(k.preis.toFixed(2)) + ' €</b></div>' : '') +
     '</div><div class="kgr">' +
-      '<div class="art"' + (String(k.art).length > 5 ? ' style="font-size:' + (String(k.art).length > 7 ? 13 : 16) + 'px"' : '') + '>' + esc(k.art) + '</div><div class="abc">' + esc(k.abc || "") + '</div>' +
+      '<div class="art"' + (String(k.art).length > 5 ? ' style="font-size:' + (String(k.art).length > 7 ? 13 : 16) + 'px"' : '') + '>' + esc(k.art) + '</div><div class="abc' + (k.abc === "A" ? ' abcA' : '') + '">' + esc(k.abc || "") + '</div>' +
       '<div class="logi ' + (k.ost ? "" : "o") + '">' + esc(k.logi) + '</div><div class="lc ' + (lc ? "r" : "") + '">' + esc(lc) + '</div>' +
       tile("в пути", fut, fut ? "o" : "") +
       (k.sklad ? tileH("склад", '<span class="v">' + fmt(k.sklad) + '</span><span class="klz">' + esc(k.sklad_d || "") + '</span>',
@@ -647,7 +651,8 @@ function zeige(a) {
     '</div></div></div>';
   html = html.replace("@@KREISE@@", '<span class="kk">' + (k.rek ? rundKreis("#70AD47", fmt(k.rek), "#fff", 34) : rundKreis("#C0504D", "—", "#fff", 34)) +
     '<i>заказ уп</i></span><span class="kk">' + (k.w1 ? rundKreis("#FF5050", (String(k.w1).match(/\d+/) || [""])[0] + (/↻/.test(k.w1) ? "↻" : ""), "#fff", 34)
-      : rundKreis("#E4E4E4", "—", "#9a9a9a", 34)) + '<i>промо W+1</i></span>');
+      : rundKreis("#E4E4E4", "—", "#9a9a9a", 34)) + '<i>промо W+1</i>' +
+    (k.w1 && k.w1_preis ? '<i class="w1p">' + fmt(k.w1_preis.toFixed(2)) + ' €</i>' : '') + '</span>');
   const rechts1 =
     tile("посл. чек", (k.last_check || "—").slice(0, 5), chekCls) +
     tile("дней назад", tg === null ? "—" : tg, chekCls) +
@@ -672,7 +677,7 @@ function zeige(a) {
     const reg = DATA.regale[key] || [];
     html += '<h3>' + esc(o[0]) + ' · холодильник ' + o[1] + ' · полка ' + o[2] + ' · место ' + o[3] + '</h3><div class="regal">' +
       reg.map((x, i) => x
-        ? '<a href="#' + x + '" data-a="' + x + '" class="' + (x === a && i + 1 === o[3] ? "akt" : "") + '">' + (i + 1) + '. ' + esc(x) + '</a>'
+        ? '<a href="#' + x + '" data-a="' + x + '" class="' + (x === a && i + 1 === o[3] ? "akt" : "") + '">' + (i + 1) + '. ' + esc(DATA.items[x] ? DATA.items[x].art : x) + '</a>'
         : '<a class="leer">' + (i + 1) + '. резерв</a>').join("") + '</div>';
   }
   html += '<button class="sec shkbtn" id="shkbtn">▌▍▌ Сформировать штрихкод</button><div id="shkbox"></div>';
