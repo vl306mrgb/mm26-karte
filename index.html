@@ -525,9 +525,11 @@ function verkaufBlock(k, rechts) {
     const werte = [t4[0], t4[1], t4[2], t4[3], r[1], r[2]];
     const da = werte.filter(x => x !== null && x !== undefined);
     const summe = kart && da.length ? fmt(Math.round(10 * da.reduce((p, x) => p + x, 0) / kart) / 10) : "";
-    const promo = (k.promo_w || [])[j];
+    const promoW = (k.promo_w || [])[j];
     h += '<tr><td class="kw">' + w + (summe ? '<i>' + summe + ' уп</i>' : '') + '</td>';
     werte.forEach((v, d) => {
+      // заливка промо по дням (акция дня пн-ср - только эти дни); старые данные - по неделе
+      const promo = k.promo_tag ? !!((k.promo_tag[j] || [])[d]) : promoW;
       if (v === null || v === undefined) { h += '<td' + (promo ? ' class="promo"' : '') + '></td>'; return; }
       const z = (zeit[j] || [])[d];
       // время последнего чека за день; раньше 16:00 - красным (для сегодняшнего дня - только после 16:00)
