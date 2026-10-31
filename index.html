@@ -61,6 +61,8 @@
     border-radius: 4px; padding: 1px 4px; text-align: right; line-height: 1.1; }
   .preis span { display: block; font-size: 10px; color: var(--muted); }
   .preis b { display: block; font-size: 15px; color: #555; }
+  .preis .pwarn { display: inline; font-size: inherit; color: #d00000; font-weight: 900; }
+  .preis.r .pwarn { color: #fff; }
   .preis.r { background: var(--rot); border-color: var(--rot); } .preis.r span, .preis.r b { color: #fff; }
   .kgr { display: grid; grid-template-columns: repeat(4, 1fr); }
   .kgr > div { border-left: 0; border-right: 1px solid var(--thin); border-bottom: 1px solid var(--thin);
@@ -628,7 +630,9 @@ function zeige(a) {
   let html = '<div class="titel">' + esc(k.name_de || k.name) + ' <span class="inh">' + esc(k.inhalt || "") + '</span></div>' + mapz +
     '<div class="mhdreihe"><div class="mhdzeile"></div><div class="krtop">@@KREISE@@</div></div>' +
     '<div class="karte"><div class="kopf"><div class="fotozelle"><div class="foto">' + fotoHtml + '</div>' +
-      (k.preis ? '<div class="preis' + (k.abc === "A" ? ' r' : '') + '"><b>'  + fmt(k.preis.toFixed(2)) + ' €</b></div>' : '') +
+      (k.preis ? '<div class="preis' + (k.abc === "A" ? ' r' : '') + '"' +
+        (k.preis_kat ? ' title="в каталоге Monolith: ' + fmt(k.preis_kat.toFixed(2)) + ' €"' : '') + '><b>' +
+        (k.preis_kat ? '<span class="pwarn">!</span> ' : '') + fmt(k.preis.toFixed(2)) + ' €</b></div>' : '') +
     '</div><div class="kgr">' +
       '<div class="art"' + (String(k.art).length > 5 ? ' style="font-size:' + (String(k.art).length > 7 ? 13 : 16) + 'px"' : '') + '>' + esc(k.art) + '</div><div class="abc">' + esc(k.abc || "") + '</div>' +
       '<div class="logi ' + (k.ost ? "" : "o") + '">' + esc(k.logi) + '</div><div class="lc ' + (lc ? "r" : "") + '">' + esc(lc) + '</div>' +
