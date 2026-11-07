@@ -134,6 +134,8 @@
   table.kreise td { position: relative; }
   table.kreise .lq { position: absolute; right: 2px; top: 1px; font-size: 10px; line-height: 1; color: #7a7a7a; font-weight: 700; }
   table.kreise td.lief { background: #FFF59D; box-shadow: inset 0 0 0 3px #FFE600; }
+  table.kreise td.lief.tn { background: #FFE0B2; box-shadow: inset 0 0 0 3px #FF8C00; }
+  table.t2 td.tn .v { color: #c00000; }
   table.kreise td.kw { border: 0; font-size: 12px; color: var(--muted); width: 30px; }
   .tabs { display: flex; background: rgba(255,255,255,.15); border-radius: 8px; padding: 3px; }
   .tabs button { background: none; color: #fff; font-size: 14px; padding: 6px 8px; border-radius: 6px; font-weight: 700; }
@@ -468,7 +470,7 @@ function block2(k) {
   const lf = k.liefer || [];
   h += '<tr><td class="kopf">последние<br>поставки</td>' +
     [0, 1, 2].map(i => zelle(["1", "2", "3"][i] + (lf[i] && lf[i].vb ? " · VB" : ""), esc(lf[i] ? lf[i].t : "—"),
-      lf[i] && lf[i].offen ? "grauf" : (lf[i] && lf[i].vb ? "o" : ""))).join("") + '</tr>';
+      (lf[i] && lf[i].offen ? "grauf" : (lf[i] && lf[i].vb ? "o" : "")) + (lf[i] && lf[i].tn ? " tn" : ""))).join("") + '</tr>';
   h += '<tr><td class="kopf">промо KW</td>' +
     zelle("прошлое", esc(p[0] || "—")) +
     zelle("текущее", esc(p[1] || "—"), p[1] && p[1] !== "—" ? "r" : "") +
@@ -509,13 +511,14 @@ function kreisBlock(k, rechts) {
   const tage = ["пн", "вт", "ср", "чт", "пт", "сб"];
   let h = '<table class="kreise"><tr><th></th>' + tage.map(t => '<th>' + t + '</th>').join("") + '</tr>';
   (kr.length === 3 ? ["W-2", "W-1", "W0"] : ["W-1", "W0"]).forEach((w, j) => {
-    h += '<tr><td class="kw">' + w + '</td>' + (kr[j] || []).map(seg => '<td' + (seg && seg[3] ? ' class="lief"' : '') + '>' +
+    h += '<tr><td class="kw">' + w + '</td>' + (kr[j] || []).map(seg => '<td' + (seg && seg[3] ? (seg[8] ? ' class="lief tn"' : ' class="lief"') : '') + '>' +
     (seg && seg[3] && seg[6] ? '<span class="lq">' + fmt(seg[6]) + '</span>' : '') + (seg ? kreis(seg) : '') + '</td>').join("") + '</tr>';
   });
   h += '</table><div class="legende">' +
     [["в корзине", 0], ["заказан", 1], ["РЦ 8–10 (•7–12)", 2]].map(x =>
       '<span><span style="width:8px;height:8px;border-radius:4px;background:' + KREIS_FARBE[x[1]] + '"></span>' + x[0] + '</span>').join("") +
-    '<span><span style="width:10px;height:8px;background:#FFF59D;box-shadow:inset 0 0 0 2px #FFE600"></span>поставка</span></div>';
+    '<span><span style="width:10px;height:8px;background:#FFF59D;box-shadow:inset 0 0 0 2px #FFE600"></span>поставка</span>' +
+    '<span><span style="width:10px;height:8px;background:#FFE0B2;box-shadow:inset 0 0 0 2px #FF8C00"></span>поставка TN</span></div>';
   return '<div class="blk"><div class="links">' + h + '</div><div class="rsp">' + rechts + '</div></div>';
 }
 
