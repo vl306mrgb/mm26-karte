@@ -205,6 +205,15 @@
   .wgzeile { font-size: 13px; color: #333; margin: 4px 2px 8px; }
   .wgzeile b { color: #111; } .wgzeile .plus { color: #2e7d32; font-weight: 700; } .wgzeile .minus { color: #c00000; font-weight: 700; }
   .grauf { background: #D9D9D9; }
+  .tnl { background: var(--card); border: 1.5px solid var(--line); border-radius: 6px; margin: 10px 0; padding: 8px; }
+  .tnl-kopf { font-weight: 800; font-size: 15px; margin-bottom: 6px; }
+  .tnl table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .tnl th { text-align: left; font-size: 11px; color: var(--muted); border-bottom: 1px solid var(--thin); padding: 3px 4px; }
+  .tnl td { border-bottom: 1px solid #e3e3e3; padding: 5px 4px; vertical-align: top; }
+  .tnl .re { text-align: right; white-space: nowrap; }
+  .tnl tr.heute td { background: #FFF3CD; }
+  .tnl tr.zuk td { color: #555; }
+  .tnl tr.summe td { font-weight: 800; border-bottom: 0; }
   .titel .inh { color: var(--muted); font-weight: 400; }
   table.t2 { width: 100%; border-collapse: collapse; table-layout: fixed; }
   table.t2 td { border: 1px solid var(--thin); padding: 4px 3px 6px; text-align: center; vertical-align: top; }
@@ -349,11 +358,34 @@ function fotosVorladen() {      // скачать все пакеты в пам�
   for (let i = 0; i < DATA.fotos.n; i++) fetch(shardUrl(i)).catch(() => {});
 }
 
+function startseite() {          // первый экран: документы teleNorma в статусе Lieferung, ±14 дней
+  const L = DATA.tn_lief;
+  if (!L) return "";
+  const iso = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  const t = new Date(), von = new Date(t), bis = new Date(t);
+  von.setDate(t.getDate() - 14); bis.setDate(t.getDate() + 14);
+  const heute = iso(t), rows = L.filter(x => x.d >= iso(von) && x.d <= iso(bis));
+  const dm = s => s.slice(8, 10) + "." + s.slice(5, 7) + "." + s.slice(2, 4);
+  const eur = v => (v || 0).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  let h = '<div class="tnl"><div class="tnl-kopf">teleNorma: заказы в статусе Lieferung <span class="klein">' +
+    dm(iso(von)) + ' – ' + dm(iso(bis)) + '</span></div>';
+  if (!rows.length) return h + '<div class="msg">нет документов</div></div>';
+  let sum = 0;
+  h += '<table><tr><th>дата</th><th>номер</th><th>логист</th><th class="re">сумма €</th></tr>';
+  rows.forEach(x => {
+    sum += x.s || 0;
+    h += '<tr' + (x.d === heute ? ' class="heute"' : (x.d > heute ? ' class="zuk"' : '')) + '><td>' + dm(x.d) + '</td><td><b>' +
+      esc(x.nr) + '</b>' + (x.ext ? '<br><span class="klein">' + esc(x.ext) + '</span>' : '') + '</td><td>' + esc(x.log) +
+      '</td><td class="re">' + eur(x.s) + '</td></tr>';
+  });
+  return h + '<tr class="summe"><td colspan="3">итого ' + rows.length + '</td><td class="re">' + eur(sum) + '</td></tr></table></div>';
+}
+
 function bereit() {
   $("mhdtab").style.display = ""; $("einst").style.display = "";
   $("mhdtab").onclick = () => { scanStop && scanAktiv && scanStop(); modus("k"); zeigeMhdListe(); };
   $("tabD").onclick = zeigeDash;
-  $("tabK").onclick = () => { modus("k"); $("out").innerHTML = ""; history.replaceState(null, "", "#"); $("code").focus(); };
+  $("tabK").onclick = () => { modus("k"); $("out").innerHTML = startseite(); history.replaceState(null, "", "#"); $("code").focus(); };
   $("einst").onclick = einstellungen;
   setTimeout(mhdSync, 2500);
   setTimeout(fotosVorladen, 1500);
@@ -367,6 +399,7 @@ function bereit() {
   } else {
     $("out").innerHTML = '<div class="msg">Сканер в этом браузере не поддерживается — откройте в Chrome на Android. Номер можно ввести вручную.</div>';
   }
+  if (!$("out").innerHTML) $("out").innerHTML = startseite();
   const h = decodeURIComponent(location.hash.slice(1));
   if (h === "dash") zeigeDash();
   else if (h === "mhd") zeigeMhdListe();
